@@ -4,7 +4,8 @@ let socket = null;
 
 export const connectSocket = (token) => {
   if (socket?.connected) return socket;
-  socket = io(process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000', {
+  const serverUrl = process.env.REACT_APP_API_URL?.replace('/api', '') || window.location.origin;
+  socket = io(serverUrl, {
     auth: { token },
     reconnection: true,
     reconnectionDelay: 1000,
