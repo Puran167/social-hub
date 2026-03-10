@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@layer base {
+  body {
+    @apply bg-surface text-gray-800 font-sans transition-colors duration-300;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .dark body,
+  body.dark-body {
+    @apply bg-dark-bg text-gray-100;
+  }
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-300/60 dark:bg-dark-border/60 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gray-400 dark:bg-gray-500; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary hover:bg-primary-hover text-white font-semibold py-2.5 px-6 rounded-xl transition-all duration-200 active:scale-95 shadow-sm hover:shadow-glow-sm;
+  }
+  .btn-secondary {
+    @apply bg-gray-100 dark:bg-dark-hover text-gray-700 dark:text-gray-200 font-semibold py-2.5 px-6 rounded-xl transition-all duration-200 hover:bg-gray-200 dark:hover:bg-dark-elevated active:scale-95;
+  }
+  .btn-outline {
+    @apply border border-gray-200 dark:border-dark-border text-gray-700 dark:text-gray-200 font-semibold py-2.5 px-6 rounded-xl transition-all duration-200 hover:bg-gray-50 dark:hover:bg-dark-hover active:scale-95;
+  }
+  .card {
+    @apply bg-white dark:bg-dark-card border border-gray-100 dark:border-dark-border rounded-2xl p-4 transition-all duration-200 shadow-soft dark:shadow-none;
+  }
+  .card-hover {
+    @apply card hover:shadow-lg hover:-translate-y-0.5 dark:hover:border-dark-elevated cursor-pointer;
+  }
+  .input-field {
+    @apply bg-gray-50 dark:bg-dark-surface border border-gray-200 dark:border-dark-border rounded-xl px-4 py-3 text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary dark:focus:border-primary-dark transition-all;
+  }
+  .glass {
+    @apply bg-white/70 dark:bg-dark-card/70 backdrop-blur-2xl border border-white/20 dark:border-dark-border/30 shadow-lg;
+  }
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary via-accent-pink to-accent-coral bg-clip-text text-transparent;
+  }
+  .text-secondary {
+    @apply text-gray-500 dark:text-gray-400;
+  }
+  .surface-bg {
+    @apply bg-surface dark:bg-dark-bg;
+  }
+  .divider {
+    @apply border-gray-100 dark:border-dark-border;
+  }
+}
+
+/* Nebula gradient */
+.nebula-gradient {
+  background: linear-gradient(135deg, #6C5CE7 0%, #A29BFE 30%, #FD79A8 60%, #FF6B6B 100%);
+}
+
+/* Story ring */
+.story-ring {
+  background: linear-gradient(135deg, #6C5CE7, #FD79A8, #FF6B6B, #FDCB6E);
+  padding: 3px;
+  border-radius: 50%;
+}
+
+.story-ring-seen {
+  background: #E2E8F0;
+  padding: 2px;
+  border-radius: 50%;
+}
+
+.dark .story-ring-seen {
+  background: #2D2D5E;
+}
+
+/* Smooth page transitions */
+.page-enter { opacity: 0; transform: translateY(12px); }
+.page-enter-active { opacity: 1; transform: translateY(0); transition: all 400ms cubic-bezier(0.16, 1, 0.3, 1); }
+.page-exit { opacity: 1; }
+.page-exit-active { opacity: 0; transition: opacity 200ms ease; }
+
+/* Music player progress */
+input[type="range"] { @apply appearance-none bg-transparent cursor-pointer; }
+input[type="range"]::-webkit-slider-runnable-track { @apply h-1 rounded-full bg-gray-200 dark:bg-dark-border transition-all; }
+input[type="range"]::-webkit-slider-thumb { @apply appearance-none w-3 h-3 rounded-full bg-primary -mt-1 shadow-glow-sm hover:scale-125 transition-transform; }
+input[type="range"]:hover::-webkit-slider-runnable-track { @apply h-1.5; }
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Bottom nav safe area for mobile */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* Glassmorphism card */
+.glass-card {
+  @apply bg-white/60 dark:bg-dark-card/60 backdrop-blur-2xl border border-white/30 dark:border-dark-border/40 rounded-2xl shadow-soft transition-all duration-200;
+}
+
+/* Glow effects */
+.glow-primary { box-shadow: 0 0 20px rgba(108, 92, 231, 0.3); }
+.glow-pink { box-shadow: 0 0 20px rgba(253, 121, 168, 0.3); }
+.glow-coral { box-shadow: 0 0 20px rgba(255, 107, 107, 0.3); }
+
+/* Smooth fade in */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+/* Subtle shadow glow for playing items */
+.shadow-glow-sm-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(108, 92, 231, 0.3); }
+  50% { box-shadow: 0 0 16px rgba(108, 92, 231, 0.5); }
+}
