@@ -14,21 +14,30 @@ const setupSocket = require('./sockets');
 const app = express();
 const server = http.createServer(app);
 
-// Determine allowed origin
-const CLIENT_URL = process.env.CLIENT_URL || (process.env.NODE_ENV === 'production' ? undefined : 'http://localhost:3000');
+// Allowed origins
+const allowedOrigins = [
+  'http://localhost:3000',
+  process.env.CLIENT_URL,
+].filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, same-origin)
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    // In production, also allow same-domain requests
+    if (process.env.NODE_ENV === 'production') return callback(null, true);
+    callback(null, false);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  credentials: true,
+};
 
 // Socket.io
-const io = new Server(server, {
-  cors: {
-    origin: CLIENT_URL || true,
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
-});
+const io = new Server(server, { cors: corsOptions });
 
 // Middleware
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' }, contentSecurityPolicy: false }));
-app.use(cors({ origin: CLIENT_URL || true, credentials: true }));
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(passport.initialize());
