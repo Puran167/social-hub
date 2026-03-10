@@ -4,7 +4,7 @@
   "description": "Personal Social Hub - MERN Stack",
   "scripts": {
     "install-all": "cd server && npm install && cd ../client && npm install",
-    "build": "cd client && npm install && npm run build",
+    "build": "cd server && npm install && cd ../client && npm install && npm run build",
     "start": "cd server && node server.js",
     "dev": "cd server && npm run dev"
   },
