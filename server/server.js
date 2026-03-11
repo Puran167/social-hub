@@ -66,6 +66,7 @@ app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/parties', require('./routes/parties'));
 app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/posts', require('./routes/posts'));
+app.use('/api/pages', require('./routes/pages'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

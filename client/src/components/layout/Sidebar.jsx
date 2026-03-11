@@ -5,7 +5,7 @@ import {
   HiHome, HiMusicalNote, HiPhoto, HiVideoCamera,
   HiChatBubbleLeftRight, HiPhone, HiUserGroup, HiCog6Tooth,
   HiSparkles, HiFilm, HiBookOpen, HiMagnifyingGlass,
-  HiHeart, HiPlusCircle, HiUser, HiSignal, HiNewspaper
+  HiHeart, HiPlusCircle, HiUser, HiSignal, HiNewspaper, HiFlag
 } from 'react-icons/hi2';
 import { useAuth } from '../../context/AuthContext';
 
@@ -21,6 +21,7 @@ const mainLinks = [
   { to: '/video-call', icon: HiPhone, label: 'Calls' },
   { to: '/friends', icon: HiUserGroup, label: 'Friends' },
   { to: '/watch-party', icon: HiSignal, label: 'Watch Party' },
+  { to: '/pages', icon: HiFlag, label: 'Pages' },
   { to: '/notifications', icon: HiHeart, label: 'Notifications' },
 ];
 

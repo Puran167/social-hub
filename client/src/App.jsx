@@ -27,6 +27,9 @@ import Friends from './pages/Friends';
 import Profile from './pages/Profile';
 import WatchPartyRoom from './pages/WatchPartyRoom';
 import Feed from './pages/Feed';
+import Pages from './pages/Pages';
+import CreatePage from './pages/CreatePage';
+import PageDetail from './pages/PageDetail';
 import SplashScreen from './pages/SplashScreen';
 
 const GOOGLE_CLIENT_ID = process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
@@ -68,6 +71,9 @@ const AppRoutes = () => (
       <Route path="watch-party" element={<WatchPartyRoom />} />
       <Route path="profile" element={<Profile />} />
       <Route path="profile/:id" element={<Profile />} />
+      <Route path="pages" element={<Pages />} />
+      <Route path="pages/create" element={<CreatePage />} />
+      <Route path="pages/:pageId" element={<PageDetail />} />
     </Route>
 
     <Route path="*" element={<Navigate to="/splash" replace />} />
