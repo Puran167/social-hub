@@ -1,4 +1,5 @@
 const Song = require('../models/Song');
+const Post = require('../models/Post');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 
@@ -14,6 +15,14 @@ exports.uploadSong = async (req, res) => {
       cloudinaryId: req.file.filename,
       coverArt: req.body.coverArt || '',
       uploadedBy: req.user._id,
+    });
+    // Auto-create feed post
+    await Post.create({
+      user: req.user._id,
+      text: (song.title || 'Untitled') + (song.artist ? ' by ' + song.artist : ''),
+      songUrl: song.audioUrl,
+      songTitle: song.title || 'Untitled',
+      type: 'music',
     });
     res.status(201).json(song);
   } catch (err) {

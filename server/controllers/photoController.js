@@ -1,4 +1,5 @@
 const Photo = require('../models/Photo');
+const Post = require('../models/Post');
 const Notification = require('../models/Notification');
 
 exports.uploadPhoto = async (req, res) => {
@@ -11,6 +12,13 @@ exports.uploadPhoto = async (req, res) => {
       album: req.body.album || 'General',
       uploadedBy: req.user._id,
       tags: req.body.tags ? JSON.parse(req.body.tags) : [],
+    });
+    // Auto-create feed post
+    await Post.create({
+      user: req.user._id,
+      text: photo.caption || '',
+      imageUrl: photo.imageUrl,
+      type: 'image',
     });
     res.status(201).json(photo);
   } catch (err) {

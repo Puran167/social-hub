@@ -1,4 +1,5 @@
 const Reel = require('../models/Reel');
+const Post = require('../models/Post');
 const Notification = require('../models/Notification');
 
 exports.createReel = async (req, res) => {
@@ -11,6 +12,13 @@ exports.createReel = async (req, res) => {
       caption: req.body.caption || '',
       musicId: req.body.musicId || null,
       musicTitle: req.body.musicTitle || '',
+    });
+    // Auto-create feed post
+    await Post.create({
+      user: req.user._id,
+      text: reel.caption || '',
+      videoUrl: reel.videoUrl,
+      type: 'video',
     });
     res.status(201).json(reel);
   } catch (err) {

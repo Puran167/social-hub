@@ -1,4 +1,5 @@
 const Video = require('../models/Video');
+const Post = require('../models/Post');
 
 exports.uploadVideo = async (req, res) => {
   try {
@@ -12,6 +13,13 @@ exports.uploadVideo = async (req, res) => {
       duration: req.body.duration ? parseFloat(req.body.duration) : 0,
       uploadedBy: req.user._id,
       playlist: req.body.playlist || '',
+    });
+    // Auto-create feed post
+    await Post.create({
+      user: req.user._id,
+      text: video.title + (video.description ? '\n' + video.description : ''),
+      videoUrl: video.videoUrl,
+      type: 'video',
     });
     res.status(201).json(video);
   } catch (err) {

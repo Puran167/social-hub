@@ -51,10 +51,7 @@ exports.getFeed = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const currentUser = await User.findById(req.user._id).select('friends');
-    const feedUsers = [req.user._id, ...(currentUser.friends || [])];
-
-    const posts = await Post.find({ user: { $in: feedUsers } })
+    const posts = await Post.find()
       .populate('user', 'name profilePhoto')
       .populate('comments.user', 'name profilePhoto')
       .populate('likes', 'name profilePhoto')
@@ -62,7 +59,7 @@ exports.getFeed = async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const total = await Post.countDocuments({ user: { $in: feedUsers } });
+    const total = await Post.countDocuments();
 
     res.json({
       posts,
