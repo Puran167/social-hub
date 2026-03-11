@@ -81,6 +81,7 @@ router.get('/:pageId/playlists', auth, ctrl.getPagePlaylists);
 router.post('/:pageId/event', auth, handleSingleUpload, ctrl.createPageEvent);
 router.get('/:pageId/events', auth, ctrl.getPageEvents);
 router.post('/events/:eventId/join', auth, ctrl.joinEvent);
+router.delete('/events/:eventId', auth, ctrl.deleteEvent);
 
 // ─── PAGE ANALYTICS ───
 router.get('/:pageId/analytics', auth, ctrl.getPageAnalytics);

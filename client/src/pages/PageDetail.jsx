@@ -55,7 +55,7 @@ const PageDetail = () => {
   // Events state
   const [events, setEvents] = useState([]);
   const [showEventModal, setShowEventModal] = useState(false);
-  const [eventForm, setEventForm] = useState({ title: '', description: '', eventDate: '' });
+  const [eventForm, setEventForm] = useState({ title: '', description: '', eventDate: '', eventLink: '' });
 
   // Products state
   const [products, setProducts] = useState([]);
@@ -222,7 +222,7 @@ const PageDetail = () => {
     try {
       await API.post(`/pages/${pageId}/event`, eventForm);
       toast.success('Event created!');
-      setShowEventModal(false); setEventForm({ title: '', description: '', eventDate: '' }); fetchEvents();
+      setShowEventModal(false); setEventForm({ title: '', description: '', eventDate: '', eventLink: '' }); fetchEvents();
     } catch { toast.error('Failed'); }
   };
 
@@ -619,7 +619,9 @@ const PageDetail = () => {
             </button>
           )}
           {events.length === 0 && <p className="text-center text-gray-500 py-10">No events yet</p>}
-          {events.map(ev => (
+          {events.map(ev => {
+            const isGoing = ev.participants?.some(p => (p._id || p) === user._id);
+            return (
             <div key={ev._id} className="card flex flex-col sm:flex-row gap-4">
               <div className="w-16 h-16 rounded-xl bg-primary/10 flex flex-col items-center justify-center flex-shrink-0">
                 <span className="text-xs text-primary font-bold">{new Date(ev.eventDate).toLocaleString('default', { month: 'short' })}</span>
@@ -628,19 +630,36 @@ const PageDetail = () => {
               <div className="flex-1 min-w-0">
                 <h3 className="font-bold">{ev.title}</h3>
                 {ev.description && <p className="text-sm text-gray-500 mt-1">{ev.description}</p>}
-                <div className="flex items-center gap-3 mt-2">
+                <div className="flex items-center gap-3 mt-2 flex-wrap">
                   <span className="text-xs text-gray-500">{ev.participants?.length || 0} going</span>
                   <button onClick={() => handleJoinEvent(ev._id)}
                     className={`text-xs font-semibold px-3 py-1 rounded-lg ${
-                      ev.participants?.some(p => (p._id || p) === user._id)
+                      isGoing
                         ? 'bg-green-100 dark:bg-green-900/20 text-green-600' : 'bg-primary/10 text-primary'
                     }`}>
-                    {ev.participants?.some(p => (p._id || p) === user._id) ? 'Going ✓' : 'Join Event'}
+                    {isGoing ? 'Going ✓' : 'Join Event'}
                   </button>
+                  {isGoing && ev.eventLink && (
+                    <a href={ev.eventLink} target="_blank" rel="noopener noreferrer"
+                      className="text-xs font-semibold px-3 py-1 rounded-lg bg-blue-100 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-200 dark:hover:bg-blue-900/30 transition-colors flex items-center gap-1">
+                      🔗 Attend Event
+                    </a>
+                  )}
                 </div>
+                {isGoing && !ev.eventLink && (
+                  <p className="text-xs text-gray-400 mt-2 italic">Event link will be shared by the organizer</p>
+                )}
               </div>
+              {isAdmin && (
+                <button onClick={async () => { try { await API.delete(`/pages/events/${ev._id}`); toast.success('Event deleted'); fetchEvents(); } catch { toast.error('Failed'); }}}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors self-start"
+                  title="Delete event">
+                  <HiTrash className="w-4 h-4" />
+                </button>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -942,6 +961,11 @@ const PageDetail = () => {
             className="input-field w-full" placeholder="Description" rows={2} />
           <input type="datetime-local" value={eventForm.eventDate} onChange={e => setEventForm({ ...eventForm, eventDate: e.target.value })}
             className="input-field w-full" required />
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Event Link (Meet/Zoom/etc.)</label>
+            <input type="url" value={eventForm.eventLink} onChange={e => setEventForm({ ...eventForm, eventLink: e.target.value })}
+              className="input-field w-full" placeholder="https://meet.google.com/..." />
+          </div>
           <button type="submit" className="btn-primary w-full">Create Event</button>
         </form>
       </Modal>

@@ -6,6 +6,7 @@ const pageEventSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   eventDate: { type: Date, required: true },
   coverImage: { type: String, default: '' },
+  eventLink: { type: String, default: '' },
   participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
 }, { timestamps: true });
 

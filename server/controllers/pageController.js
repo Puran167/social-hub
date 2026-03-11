@@ -332,6 +332,7 @@ exports.createPageEvent = async (req, res) => {
       title: req.body.title,
       description: req.body.description || '',
       eventDate: req.body.eventDate,
+      eventLink: req.body.eventLink || '',
       coverImage: req.file?.path || '',
     });
     res.status(201).json(event);
@@ -360,6 +361,19 @@ exports.joinEvent = async (req, res) => {
     else event.participants.push(req.user._id);
     await event.save();
     res.json(event);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.deleteEvent = async (req, res) => {
+  try {
+    const event = await PageEvent.findById(req.params.eventId);
+    if (!event) return res.status(404).json({ message: 'Event not found' });
+    const page = await Page.findById(event.page);
+    if (!isPageAdmin(page, req.user._id)) return res.status(403).json({ message: 'Not authorized' });
+    await event.deleteOne();
+    res.json({ message: 'Event deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
