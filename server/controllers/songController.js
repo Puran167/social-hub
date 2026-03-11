@@ -16,14 +16,16 @@ exports.uploadSong = async (req, res) => {
       coverArt: req.body.coverArt || '',
       uploadedBy: req.user._id,
     });
-    // Auto-create feed post
-    await Post.create({
-      user: req.user._id,
-      text: (song.title || 'Untitled') + (song.artist ? ' by ' + song.artist : ''),
-      songUrl: song.audioUrl,
-      songTitle: song.title || 'Untitled',
-      type: 'music',
-    });
+    // Auto-create feed post only if requested
+    if (req.body.postToFeed !== 'false') {
+      await Post.create({
+        user: req.user._id,
+        text: (song.title || 'Untitled') + (song.artist ? ' by ' + song.artist : ''),
+        songUrl: song.audioUrl,
+        songTitle: song.title || 'Untitled',
+        type: 'music',
+      });
+    }
     res.status(201).json(song);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

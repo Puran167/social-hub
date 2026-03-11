@@ -18,6 +18,7 @@ const Videos = () => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [postToFeed, setPostToFeed] = useState(true);
   const [comment, setComment] = useState('');
 
   useEffect(() => { fetchVideos(); }, []);
@@ -39,6 +40,7 @@ const Videos = () => {
       form.append('video', file);
       form.append('title', title);
       form.append('description', description);
+      form.append('postToFeed', postToFeed);
       const { data } = await API.post('/videos', form);
       setVideos(prev => [data, ...prev]);
       setShowUpload(false);
@@ -183,8 +185,17 @@ const Videos = () => {
             className="input-field w-full" placeholder="Video title" required />
           <textarea value={description} onChange={e => setDescription(e.target.value)}
             className="input-field w-full" placeholder="Description" rows={3} />
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <div className={`relative w-11 h-6 rounded-full transition-colors ${postToFeed ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
+              onClick={() => setPostToFeed(!postToFeed)}>
+              <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${postToFeed ? 'translate-x-5' : ''}`} />
+            </div>
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {postToFeed ? 'Also post to Feed' : 'Save only (private)'}
+            </span>
+          </label>
           <button type="submit" disabled={uploading} className="btn-primary w-full disabled:opacity-50">
-            {uploading ? 'Uploading...' : 'Upload Video'}
+            {uploading ? 'Uploading...' : postToFeed ? 'Upload & Share' : 'Save Video'}
           </button>
         </form>
       </Modal>

@@ -25,6 +25,7 @@ const Photos = () => {
   const [album, setAlbum] = useState('General');
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [postToFeed, setPostToFeed] = useState(true);
   const [comment, setComment] = useState('');
   const [slideshow, setSlideshow] = useState(false);
   const [slideIndex, setSlideIndex] = useState(0);
@@ -51,6 +52,7 @@ const Photos = () => {
       form.append('photo', file);
       form.append('caption', caption);
       form.append('album', album);
+      form.append('postToFeed', postToFeed);
       const { data } = await API.post('/photos', form);
       setPhotos(prev => [data, ...prev]);
       setShowUpload(false);
@@ -575,12 +577,21 @@ const Photos = () => {
             <input type="text" value={album} onChange={e => setAlbum(e.target.value)}
               className="input-field w-full" placeholder="Album name" />
           </div>
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <div className={`relative w-11 h-6 rounded-full transition-colors ${postToFeed ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
+              onClick={() => setPostToFeed(!postToFeed)}>
+              <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${postToFeed ? 'translate-x-5' : ''}`} />
+            </div>
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {postToFeed ? 'Also post to Feed' : 'Save only (private)'}
+            </span>
+          </label>
           <motion.button
             whileTap={{ scale: 0.97 }}
             type="submit" disabled={uploading}
             className="btn-primary w-full disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {uploading ? 'Uploading...' : <><HiArrowUpTray className="w-4 h-4" /> Share Photo</>}
+            {uploading ? 'Uploading...' : <><HiArrowUpTray className="w-4 h-4" /> {postToFeed ? 'Share Photo' : 'Save Photo'}</>}
           </motion.button>
         </form>
       </Modal>

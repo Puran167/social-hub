@@ -13,13 +13,15 @@ exports.createReel = async (req, res) => {
       musicId: req.body.musicId || null,
       musicTitle: req.body.musicTitle || '',
     });
-    // Auto-create feed post
-    await Post.create({
-      user: req.user._id,
-      text: reel.caption || '',
-      videoUrl: reel.videoUrl,
-      type: 'video',
-    });
+    // Auto-create feed post only if requested
+    if (req.body.postToFeed !== 'false') {
+      await Post.create({
+        user: req.user._id,
+        text: reel.caption || '',
+        videoUrl: reel.videoUrl,
+        type: 'video',
+      });
+    }
     res.status(201).json(reel);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

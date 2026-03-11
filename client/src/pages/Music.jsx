@@ -26,6 +26,7 @@ const Music = () => {
   const [uploadForm, setUploadForm] = useState({ title: '', artist: '', album: '', genre: '' });
   const [audioFile, setAudioFile] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [postToFeed, setPostToFeed] = useState(true);
   const [newPlaylistName, setNewPlaylistName] = useState('');
 
   useEffect(() => { fetchData(); }, []);
@@ -55,6 +56,7 @@ const Music = () => {
       if (uploadForm.artist) form.append('artist', uploadForm.artist);
       if (uploadForm.album) form.append('album', uploadForm.album);
       if (uploadForm.genre) form.append('genre', uploadForm.genre);
+      form.append('postToFeed', postToFeed);
       const { data } = await API.post('/songs', form);
       setSongs(prev => [data, ...prev]);
       setMySongs(prev => [data, ...prev]);
@@ -341,13 +343,22 @@ const Music = () => {
                 className="input-field w-full" placeholder="Genre" />
             </div>
           </div>
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <div className={`relative w-11 h-6 rounded-full transition-colors ${postToFeed ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}`}
+              onClick={() => setPostToFeed(!postToFeed)}>
+              <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${postToFeed ? 'translate-x-5' : ''}`} />
+            </div>
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {postToFeed ? 'Also post to Feed' : 'Save only (private)'}
+            </span>
+          </label>
           <button type="submit" disabled={uploading || !audioFile} className="btn-primary w-full disabled:opacity-50">
             {uploading ? (
               <span className="flex items-center justify-center gap-2">
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Uploading...
               </span>
-            ) : 'Upload Song'}
+            ) : postToFeed ? 'Upload & Share' : 'Save Song'}
           </button>
         </form>
       </Modal>

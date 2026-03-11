@@ -14,13 +14,15 @@ exports.uploadVideo = async (req, res) => {
       uploadedBy: req.user._id,
       playlist: req.body.playlist || '',
     });
-    // Auto-create feed post
-    await Post.create({
-      user: req.user._id,
-      text: video.title + (video.description ? '\n' + video.description : ''),
-      videoUrl: video.videoUrl,
-      type: 'video',
-    });
+    // Auto-create feed post only if requested
+    if (req.body.postToFeed !== 'false') {
+      await Post.create({
+        user: req.user._id,
+        text: video.title + (video.description ? '\n' + video.description : ''),
+        videoUrl: video.videoUrl,
+        type: 'video',
+      });
+    }
     res.status(201).json(video);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });

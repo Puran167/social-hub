@@ -13,13 +13,15 @@ exports.uploadPhoto = async (req, res) => {
       uploadedBy: req.user._id,
       tags: req.body.tags ? JSON.parse(req.body.tags) : [],
     });
-    // Auto-create feed post
-    await Post.create({
-      user: req.user._id,
-      text: photo.caption || '',
-      imageUrl: photo.imageUrl,
-      type: 'image',
-    });
+    // Auto-create feed post only if requested
+    if (req.body.postToFeed !== 'false') {
+      await Post.create({
+        user: req.user._id,
+        text: photo.caption || '',
+        imageUrl: photo.imageUrl,
+        type: 'image',
+      });
+    }
     res.status(201).json(photo);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
