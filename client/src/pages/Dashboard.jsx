@@ -19,17 +19,20 @@ const Dashboard = () => {
   const [recentSongs, setRecentSongs] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [friends, setFriends] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [songsRes, friendsRes] = await Promise.all([
+        const [songsRes, friendsRes, pendingRes] = await Promise.all([
           API.get('/songs?limit=8'),
           API.get('/friends'),
+          API.get('/friends/pending'),
         ]);
         setRecentSongs(songsRes.data.songs || []);
         setFriends(friendsRes.data || []);
+        setPendingRequests(pendingRes.data || []);
       } catch (err) { /* ignore */ }
       setLoading(false);
     };
@@ -81,7 +84,7 @@ const Dashboard = () => {
                 {friends.length} Friends
               </span>
               <span onClick={() => navigate('/friends')} className="text-[11px] bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full font-medium cursor-pointer hover:bg-white/30 transition-colors">
-                {unreadCount} New
+                {pendingRequests.length} New
               </span>
             </div>
           </div>
