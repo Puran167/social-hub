@@ -21,10 +21,7 @@ exports.createStory = async (req, res) => {
 
 exports.getStories = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
-    const friendIds = [...user.friends, req.user._id];
     const stories = await Story.find({
-      user: { $in: friendIds },
       expiresAt: { $gt: new Date() },
     })
       .populate('user', 'name profilePhoto')

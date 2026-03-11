@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { HiPlus, HiXMark, HiChevronLeft, HiChevronRight, HiEye } from 'react-icons/hi2';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiPlus, HiXMark, HiChevronLeft, HiChevronRight, HiEye, HiPause, HiPlay } from 'react-icons/hi2';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -18,10 +18,14 @@ const Stories = () => {
   const [mediaType, setMediaType] = useState('photo');
   const [uploading, setUploading] = useState(false);
   // Story viewer
-  const [viewingGroup, setViewingGroup] = useState(null);
+  const [viewingGroupIdx, setViewingGroupIdx] = useState(null);
   const [viewingIndex, setViewingIndex] = useState(0);
   const [progress, setProgress] = useState(0);
+  const [paused, setPaused] = useState(false);
   const timerRef = useRef(null);
+  const videoRef = useRef(null);
+
+  const viewingGroup = viewingGroupIdx !== null ? storyGroups[viewingGroupIdx] : null;
 
   useEffect(() => { fetchStories(); }, []);
 
@@ -52,45 +56,53 @@ const Stories = () => {
     setUploading(false);
   };
 
-  // Story viewer logic
-  const openStory = (group, index = 0) => {
-    setViewingGroup(group);
-    setViewingIndex(index);
+  // Open story viewer
+  const openStory = (groupIdx, storyIdx = 0) => {
+    setViewingGroupIdx(groupIdx);
+    setViewingIndex(storyIdx);
     setProgress(0);
-    // Mark as viewed
-    if (group.stories[index]) {
-      API.put(`/stories/view/${group.stories[index]._id}`).catch(() => {});
+    setPaused(false);
+    const group = storyGroups[groupIdx];
+    if (group?.stories[storyIdx]) {
+      API.put(`/stories/view/${group.stories[storyIdx]._id}`).catch(() => {});
     }
   };
 
+  // Auto-advance timer
   useEffect(() => {
-    if (!viewingGroup) return;
-    const duration = viewingGroup.stories[viewingIndex]?.type === 'video' ? 15000 : 5000;
+    if (viewingGroupIdx === null || paused) {
+      clearInterval(timerRef.current);
+      return;
+    }
+    const currentStory = viewingGroup?.stories[viewingIndex];
+    const duration = currentStory?.type === 'video' ? 15000 : 5000;
     const interval = 50;
-    let elapsed = 0;
+    let elapsed = (progress / 100) * duration;
+
     timerRef.current = setInterval(() => {
       elapsed += interval;
-      setProgress((elapsed / duration) * 100);
-      if (elapsed >= duration) nextStoryItem();
+      const pct = (elapsed / duration) * 100;
+      setProgress(pct);
+      if (elapsed >= duration) {
+        clearInterval(timerRef.current);
+        nextStoryItem();
+      }
     }, interval);
+
     return () => clearInterval(timerRef.current);
-  }, [viewingGroup, viewingIndex]);
+  }, [viewingGroupIdx, viewingIndex, paused]);
 
   const nextStoryItem = () => {
-    if (!viewingGroup) return;
+    if (viewingGroup === null) return;
     if (viewingIndex < viewingGroup.stories.length - 1) {
       const newIdx = viewingIndex + 1;
       setViewingIndex(newIdx);
       setProgress(0);
       API.put(`/stories/view/${viewingGroup.stories[newIdx]._id}`).catch(() => {});
+    } else if (viewingGroupIdx < storyGroups.length - 1) {
+      openStory(viewingGroupIdx + 1, 0);
     } else {
-      // Next group or close
-      const currentGroupIdx = storyGroups.indexOf(viewingGroup);
-      if (currentGroupIdx < storyGroups.length - 1) {
-        openStory(storyGroups[currentGroupIdx + 1], 0);
-      } else {
-        closeViewer();
-      }
+      closeViewer();
     }
   };
 
@@ -98,126 +110,246 @@ const Stories = () => {
     if (viewingIndex > 0) {
       setViewingIndex(viewingIndex - 1);
       setProgress(0);
+    } else if (viewingGroupIdx > 0) {
+      const prevGroup = storyGroups[viewingGroupIdx - 1];
+      openStory(viewingGroupIdx - 1, prevGroup.stories.length - 1);
     }
   };
 
   const closeViewer = () => {
     clearInterval(timerRef.current);
-    setViewingGroup(null);
+    setViewingGroupIdx(null);
     setViewingIndex(0);
     setProgress(0);
+    setPaused(false);
+  };
+
+  const togglePause = () => {
+    setPaused(p => !p);
+    if (videoRef.current) {
+      paused ? videoRef.current.play() : videoRef.current.pause();
+    }
+  };
+
+  const timeAgo = (date) => {
+    if (!date) return '';
+    const diff = (Date.now() - new Date(date).getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
   };
 
   if (loading) return <LoadingSpinner size="lg" text="Loading stories..." />;
 
+  const currentStory = viewingGroup?.stories[viewingIndex];
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Stories</h1>
-        <button onClick={() => setShowUpload(true)} className="btn-primary text-sm flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Stories</h1>
+        <button onClick={() => setShowUpload(true)}
+          className="flex items-center gap-2 px-4 py-2.5 nebula-gradient text-white text-sm font-semibold rounded-xl shadow-glow-sm hover:shadow-glow transition-shadow">
           <HiPlus className="w-4 h-4" /> Add Story
         </button>
       </div>
 
-      {/* Story Circles - Instagram style */}
+      {/* Story Circles Row - Instagram style */}
       <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-        {/* Add story */}
+        {/* Add your story */}
         <button onClick={() => setShowUpload(true)}
           className="flex-shrink-0 flex flex-col items-center gap-2">
-          <div className="w-20 h-20 rounded-full bg-white dark:bg-white dark:bg-dark-card border-2 border-dashed border-white/20 flex items-center justify-center hover:border-primary transition-all">
-            <HiPlus className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+          <div className="relative w-[72px] h-[72px]">
+            <div className="w-full h-full rounded-full bg-gray-100 dark:bg-dark-hover overflow-hidden border-2 border-gray-200 dark:border-dark-border">
+              {user?.profilePhoto ? (
+                <img src={user.profilePhoto} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-lg font-bold text-gray-500 dark:text-gray-400 bg-gradient-to-br from-primary/20 to-accent-pink/20">
+                  {user?.name?.[0]}
+                </div>
+              )}
+            </div>
+            <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-primary border-2 border-white dark:border-dark-bg flex items-center justify-center">
+              <HiPlus className="w-3.5 h-3.5 text-white" />
+            </div>
           </div>
-          <span className="text-xs text-gray-500 dark:text-gray-400">Your Story</span>
+          <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium">Your Story</span>
         </button>
 
-        {storyGroups.map((group, gi) => (
-          <button key={gi} onClick={() => openStory(group)}
-            className="flex-shrink-0 flex flex-col items-center gap-2">
-            <div className="story-ring">
-              <div className="w-20 h-20 rounded-full bg-surface dark:bg-surface dark:bg-dark-bg overflow-hidden border-2 border-gray-200 dark:border-dark-border">
-                {group.user?.profilePhoto ? (
-                  <img src={group.user.profilePhoto} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-accent-pink to-primary">
-                    {group.user?.name?.[0]}
+        {storyGroups.map((group, gi) => {
+          const hasUnviewed = group.stories.some(s =>
+            !s.viewers?.some(v => (v.user?._id || v.user) === user?._id)
+          );
+          return (
+            <button key={gi} onClick={() => openStory(gi)}
+              className="flex-shrink-0 flex flex-col items-center gap-2">
+              <div className={`p-[3px] rounded-full ${hasUnviewed ? 'bg-gradient-to-tr from-yellow-400 via-accent-coral to-accent-pink' : 'bg-gray-300 dark:bg-gray-600'}`}>
+                <div className="w-[66px] h-[66px] rounded-full bg-white dark:bg-dark-bg p-[2px]">
+                  <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 dark:bg-dark-hover">
+                    {group.user?.profilePhoto ? (
+                      <img src={group.user.profilePhoto} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-white font-bold bg-gradient-to-br from-accent-pink to-primary">
+                        {group.user?.name?.[0]}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <span className="text-[11px] truncate w-[72px] text-center text-gray-700 dark:text-gray-300 font-medium">
+                {group.user?._id === user?._id ? 'Your Story' : group.user?.name?.split(' ')[0]}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {storyGroups.length === 0 && (
+        <div className="text-center py-20">
+          <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-primary/10 to-accent-pink/10 flex items-center justify-center mb-4">
+            <HiPlus className="w-8 h-8 text-primary/50" />
+          </div>
+          <h3 className="text-lg font-bold text-gray-800 dark:text-gray-100">No stories yet</h3>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Share your first story!</p>
+          <button onClick={() => setShowUpload(true)}
+            className="mt-4 px-6 py-2.5 nebula-gradient text-white rounded-2xl text-sm font-semibold shadow-glow-sm hover:shadow-glow transition-shadow">
+            Add Story
+          </button>
+        </div>
+      )}
+
+      {/* ========== FULL-SCREEN STORY VIEWER (Instagram-like) ========== */}
+      <AnimatePresence>
+        {viewingGroup && currentStory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black"
+          >
+            {/* Centered story card */}
+            <div className="w-full h-full flex items-center justify-center">
+              {/* Story container — phone-shaped on desktop, full on mobile */}
+              <div className="relative w-full h-full sm:w-[420px] sm:h-[95vh] sm:max-h-[860px] sm:rounded-2xl overflow-hidden bg-black">
+
+                {/* Background blur layer for images that don't fill */}
+                {currentStory.type !== 'video' && (
+                  <div className="absolute inset-0">
+                    <img src={currentStory.mediaUrl} alt="" className="w-full h-full object-cover blur-2xl scale-110 opacity-40" />
+                  </div>
+                )}
+
+                {/* Main media */}
+                <div className="absolute inset-0 flex items-center justify-center" onClick={togglePause}>
+                  {currentStory.type === 'video' ? (
+                    <video
+                      ref={videoRef}
+                      src={currentStory.mediaUrl}
+                      autoPlay
+                      playsInline
+                      muted={false}
+                      className="w-full h-full object-contain"
+                      onEnded={nextStoryItem}
+                    />
+                  ) : (
+                    <img
+                      src={currentStory.mediaUrl}
+                      alt=""
+                      className="w-full h-full object-contain"
+                    />
+                  )}
+                </div>
+
+                {/* Top gradient overlay */}
+                <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-black/60 to-transparent pointer-events-none z-10" />
+
+                {/* Bottom gradient overlay */}
+                <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-black/60 to-transparent pointer-events-none z-10" />
+
+                {/* Progress bars */}
+                <div className="absolute top-2 left-2 right-2 flex gap-1 z-20">
+                  {viewingGroup.stories.map((_, i) => (
+                    <div key={i} className="flex-1 h-[3px] bg-white/30 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-white rounded-full"
+                        style={{
+                          width: i < viewingIndex ? '100%' : i === viewingIndex ? `${progress}%` : '0%',
+                          transition: i === viewingIndex ? 'width 50ms linear' : 'none',
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* User info header */}
+                <div className="absolute top-5 left-3 right-3 flex items-center justify-between z-20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full overflow-hidden ring-2 ring-white/30">
+                      {viewingGroup.user?.profilePhoto ? (
+                        <img src={viewingGroup.user.profilePhoto} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs font-bold text-white bg-gradient-to-br from-primary to-accent-pink">
+                          {viewingGroup.user?.name?.[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white drop-shadow-lg">{viewingGroup.user?.name}</p>
+                      <p className="text-[11px] text-white/60">{timeAgo(currentStory.createdAt)}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={togglePause} className="p-2 rounded-full hover:bg-white/10 transition-colors">
+                      {paused ? <HiPlay className="w-5 h-5 text-white" /> : <HiPause className="w-5 h-5 text-white" />}
+                    </button>
+                    <button onClick={closeViewer} className="p-2 rounded-full hover:bg-white/10 transition-colors">
+                      <HiXMark className="w-6 h-6 text-white" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Left/Right tap zones for navigation */}
+                <div className="absolute inset-0 z-10 flex">
+                  <div className="w-1/3 h-full cursor-pointer" onClick={(e) => { e.stopPropagation(); prevStoryItem(); }} />
+                  <div className="w-1/3 h-full" />
+                  <div className="w-1/3 h-full cursor-pointer" onClick={(e) => { e.stopPropagation(); nextStoryItem(); }} />
+                </div>
+
+                {/* Caption */}
+                {currentStory.caption && (
+                  <div className="absolute bottom-6 left-0 right-0 text-center px-6 z-20">
+                    <p className="text-sm text-white bg-black/40 backdrop-blur-md px-5 py-3 rounded-2xl inline-block max-w-full drop-shadow-lg">
+                      {currentStory.caption}
+                    </p>
+                  </div>
+                )}
+
+                {/* View count for own stories */}
+                {viewingGroup.user?._id === user?._id && (
+                  <div className="absolute bottom-6 left-4 flex items-center gap-1.5 z-20">
+                    <HiEye className="w-4 h-4 text-white/70" />
+                    <span className="text-sm text-white/70 font-medium">{currentStory.viewers?.length || 0}</span>
                   </div>
                 )}
               </div>
             </div>
-            <span className="text-xs truncate w-20 text-center">{group.user?.name?.split(' ')[0]}</span>
-          </button>
-        ))}
-      </div>
 
-      {storyGroups.length === 0 && (
-        <div className="text-center py-16 text-gray-500 dark:text-gray-400">
-          <p>No stories from friends yet. Be the first to share!</p>
-        </div>
-      )}
-
-      {/* Story Viewer - Full screen */}
-      {viewingGroup && (
-        <div className="fixed inset-0 z-50 bg-black flex items-center justify-center">
-          {/* Progress bars */}
-          <div className="absolute top-3 left-3 right-3 flex gap-1 z-10">
-            {viewingGroup.stories.map((_, i) => (
-              <div key={i} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all duration-75"
-                  style={{ width: i < viewingIndex ? '100%' : i === viewingIndex ? `${progress}%` : '0%' }} />
-              </div>
-            ))}
-          </div>
-
-          {/* User info */}
-          <div className="absolute top-6 left-3 right-3 flex items-center justify-between z-10">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-elevated">
-                {viewingGroup.user?.profilePhoto ?
-                  <img src={viewingGroup.user.profilePhoto} alt="" className="w-full h-full object-cover" /> :
-                  <div className="w-full h-full flex items-center justify-center text-xs font-bold">{viewingGroup.user?.name?.[0]}</div>
-                }
-              </div>
-              <span className="text-sm font-medium">{viewingGroup.user?.name}</span>
-              <span className="text-xs text-white/60">{new Date(viewingGroup.stories[viewingIndex]?.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-            <button onClick={closeViewer} className="p-1"><HiXMark className="w-6 h-6" /></button>
-          </div>
-
-          {/* Media */}
-          <div className="w-full h-full flex items-center justify-center">
-            {viewingGroup.stories[viewingIndex]?.type === 'video' ? (
-              <video src={viewingGroup.stories[viewingIndex].mediaUrl} autoPlay className="max-w-full max-h-full object-contain" />
-            ) : (
-              <img src={viewingGroup.stories[viewingIndex]?.mediaUrl} alt="" className="max-w-full max-h-full object-contain" />
-            )}
-          </div>
-
-          {/* Caption */}
-          {viewingGroup.stories[viewingIndex]?.caption && (
-            <div className="absolute bottom-16 left-0 right-0 text-center px-8">
-              <p className="text-sm bg-black/40 backdrop-blur-sm px-4 py-2 rounded-lg inline-block">
-                {viewingGroup.stories[viewingIndex].caption}
-              </p>
-            </div>
-          )}
-
-          {/* Navigation */}
-          <button onClick={prevStoryItem} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-gray-100 dark:bg-dark-hover hover:bg-gray-200 dark:bg-dark-elevated">
-            <HiChevronLeft className="w-5 h-5" />
-          </button>
-          <button onClick={nextStoryItem} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-gray-100 dark:bg-dark-hover hover:bg-gray-200 dark:bg-dark-elevated">
-            <HiChevronRight className="w-5 h-5" />
-          </button>
-
-          {/* Viewers */}
-          {viewingGroup.user?._id === user?._id && (
-            <div className="absolute bottom-4 left-4 flex items-center gap-1 text-sm text-white/60">
-              <HiEye className="w-4 h-4" />
-              <span>{viewingGroup.stories[viewingIndex]?.viewers?.length || 0} views</span>
-            </div>
-          )}
-        </div>
-      )}
+            {/* Desktop prev/next arrows (outside the card) */}
+            <button
+              onClick={prevStoryItem}
+              className="hidden sm:flex absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm items-center justify-center transition-colors z-30"
+            >
+              <HiChevronLeft className="w-5 h-5 text-white" />
+            </button>
+            <button
+              onClick={nextStoryItem}
+              className="hidden sm:flex absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm items-center justify-center transition-colors z-30"
+            >
+              <HiChevronRight className="w-5 h-5 text-white" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Upload Modal */}
       <Modal isOpen={showUpload} onClose={() => setShowUpload(false)} title="Add Story" size="md">
