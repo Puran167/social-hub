@@ -52,6 +52,7 @@ router.get('/', auth, ctrl.getPages);
 router.get('/my', auth, ctrl.getMyPages);
 router.get('/:pageId', auth, ctrl.getPage);
 router.put('/:pageId', auth, handlePagePhotoUpload, ctrl.updatePage);
+router.delete('/:pageId', auth, ctrl.deletePage);
 
 // ─── FOLLOW / UNFOLLOW ───
 router.post('/:pageId/follow', auth, ctrl.followPage);

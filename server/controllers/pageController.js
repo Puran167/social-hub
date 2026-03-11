@@ -525,3 +525,31 @@ exports.likeDiscussion = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+// ═══════════════════════════════════════════
+// DELETE PAGE
+// ═══════════════════════════════════════════
+
+exports.deletePage = async (req, res) => {
+  try {
+    const page = await Page.findById(req.params.pageId);
+    if (!page) return res.status(404).json({ message: 'Page not found' });
+    if (page.creator.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only page creator can delete the page' });
+    }
+    // Clean up all related data
+    await Promise.all([
+      PagePost.deleteMany({ page: page._id }),
+      PageStory.deleteMany({ page: page._id }),
+      PageMessage.deleteMany({ page: page._id }),
+      PagePlaylist.deleteMany({ page: page._id }),
+      PageEvent.deleteMany({ page: page._id }),
+      PageProduct.deleteMany({ page: page._id }),
+      PageDiscussion.deleteMany({ page: page._id }),
+    ]);
+    await page.deleteOne();
+    res.json({ message: 'Page deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};

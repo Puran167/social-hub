@@ -7,7 +7,7 @@ import {
   HiUsers, HiAcademicCap, HiPhoto, HiVideoCamera, HiPaperAirplane,
   HiCalendarDays, HiShoppingBag, HiChartBar, HiCog6Tooth, HiXMark,
   HiEllipsisHorizontal, HiChatBubbleOvalLeft, HiHandThumbUp, HiFilm,
-  HiPlay, HiPause
+  HiPlay, HiPause, HiPencilSquare, HiTrash
 } from 'react-icons/hi2';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -75,6 +75,15 @@ const PageDetail = () => {
 
   // Analytics state
   const [analytics, setAnalytics] = useState(null);
+
+  // Edit/Delete state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ pageName: '', category: '', description: '' });
+  const [editProfilePhoto, setEditProfilePhoto] = useState(null);
+  const [editCoverPhoto, setEditCoverPhoto] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchPage();
@@ -254,6 +263,42 @@ const PageDetail = () => {
     try { await API.put(`/pages/discussions/${discId}/like`); fetchDiscussions(); } catch {}
   };
 
+  const openEditModal = () => {
+    setEditForm({ pageName: page.pageName, category: page.category, description: page.description || '' });
+    setEditProfilePhoto(null);
+    setEditCoverPhoto(null);
+    setShowEditModal(true);
+  };
+
+  const handleEditPage = async (e) => {
+    e.preventDefault();
+    if (!editForm.pageName.trim() || !editForm.category) return toast.error('Name and category required');
+    setSaving(true);
+    try {
+      const form = new FormData();
+      form.append('pageName', editForm.pageName);
+      form.append('category', editForm.category);
+      form.append('description', editForm.description);
+      if (editProfilePhoto) form.append('profilePhoto', editProfilePhoto);
+      if (editCoverPhoto) form.append('coverPhoto', editCoverPhoto);
+      await API.put(`/pages/${pageId}`, form);
+      toast.success('Page updated!');
+      setShowEditModal(false);
+      fetchPage();
+    } catch { toast.error('Update failed'); }
+    setSaving(false);
+  };
+
+  const handleDeletePage = async () => {
+    setDeleting(true);
+    try {
+      await API.delete(`/pages/${pageId}`);
+      toast.success('Page deleted');
+      navigate('/pages');
+    } catch { toast.error('Delete failed'); }
+    setDeleting(false);
+  };
+
   if (loading) return <LoadingSpinner size="lg" text="Loading page..." />;
   if (!page) return null;
 
@@ -317,6 +362,20 @@ const PageDetail = () => {
                 className="p-2 rounded-xl bg-gray-100 dark:bg-dark-elevated hover:bg-gray-200 dark:hover:bg-dark-hover transition-colors">
                 <HiChatBubbleLeft className="w-5 h-5" />
               </button>
+              {isAdmin && (
+                <>
+                  <button onClick={openEditModal}
+                    className="p-2 rounded-xl bg-gray-100 dark:bg-dark-elevated hover:bg-gray-200 dark:hover:bg-dark-hover transition-colors"
+                    title="Edit Page">
+                    <HiPencilSquare className="w-5 h-5" />
+                  </button>
+                  <button onClick={() => setShowDeleteConfirm(true)}
+                    className="p-2 rounded-xl bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 transition-colors"
+                    title="Delete Page">
+                    <HiTrash className="w-5 h-5" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -725,6 +784,90 @@ const PageDetail = () => {
           <input type="text" value={playlistTitle} onChange={e => setPlaylistTitle(e.target.value)}
             className="input-field w-full" placeholder="Playlist name" />
           <button onClick={handleCreatePlaylist} className="btn-primary w-full">Create Playlist</button>
+        </div>
+      </Modal>
+
+      {/* Edit Page Modal */}
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Page" size="md">
+        <form onSubmit={handleEditPage} className="space-y-4">
+          {/* Cover photo preview + change */}
+          <div className={`h-28 rounded-xl bg-gradient-to-r ${categoryColors[editForm.category] || gradColor} relative overflow-hidden`}>
+            {(editCoverPhoto || page.coverPhoto) && (
+              <img src={editCoverPhoto ? URL.createObjectURL(editCoverPhoto) : page.coverPhoto} alt="" className="w-full h-full object-cover" />
+            )}
+            <label className="absolute inset-0 flex items-center justify-center bg-black/20 cursor-pointer hover:bg-black/30 transition-colors">
+              <span className="bg-white/20 backdrop-blur-sm text-white text-xs font-medium px-3 py-1.5 rounded-lg flex items-center gap-1">
+                <HiPhoto className="w-3.5 h-3.5" /> Change Cover
+              </span>
+              <input type="file" accept="image/*" className="hidden" onChange={e => setEditCoverPhoto(e.target.files[0])} />
+            </label>
+          </div>
+
+          {/* Profile photo */}
+          <div className="flex items-center gap-3 -mt-8 ml-3 relative z-10">
+            <div className="w-16 h-16 rounded-xl border-3 border-white dark:border-dark-card shadow-md overflow-hidden bg-white dark:bg-dark-card">
+              {(editProfilePhoto || page.profilePhoto) ? (
+                <img src={editProfilePhoto ? URL.createObjectURL(editProfilePhoto) : page.profilePhoto} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className={`w-full h-full bg-gradient-to-br ${gradColor} flex items-center justify-center`}>
+                  <CatIcon className="w-7 h-7 text-white" />
+                </div>
+              )}
+            </div>
+            <label className="cursor-pointer text-xs text-primary font-semibold hover:underline">
+              Change Photo
+              <input type="file" accept="image/*" className="hidden" onChange={e => setEditProfilePhoto(e.target.files[0])} />
+            </label>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">Page Name</label>
+            <input type="text" value={editForm.pageName} onChange={e => setEditForm({ ...editForm, pageName: e.target.value })}
+              className="input-field w-full" required />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">Category</label>
+            <select value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
+              className="input-field w-full">
+              {['Music', 'Creator', 'Brand', 'Community', 'Education'].map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5 block">Description</label>
+            <textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+              className="input-field w-full" rows={3} maxLength={500} />
+          </div>
+
+          <button type="submit" disabled={saving} className="btn-primary w-full disabled:opacity-50">
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </form>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Delete Page" size="sm">
+        <div className="space-y-4 text-center">
+          <div className="w-14 h-14 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center mx-auto">
+            <HiTrash className="w-7 h-7 text-red-500" />
+          </div>
+          <div>
+            <p className="font-semibold">Delete "{page.pageName}"?</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">This will permanently delete the page, all posts, stories, events, products, and discussions. This action cannot be undone.</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setShowDeleteConfirm(false)}
+              className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-dark-elevated text-sm font-medium hover:bg-gray-200 dark:hover:bg-dark-hover transition-colors">
+              Cancel
+            </button>
+            <button onClick={handleDeletePage} disabled={deleting}
+              className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50">
+              {deleting ? 'Deleting...' : 'Delete Page'}
+            </button>
+          </div>
         </div>
       </Modal>
     </div>
