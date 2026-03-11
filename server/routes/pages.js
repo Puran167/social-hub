@@ -63,6 +63,7 @@ router.post('/:pageId/post', auth, handlePagePostUpload, ctrl.createPagePost);
 router.get('/:pageId/posts', auth, ctrl.getPagePosts);
 router.put('/posts/:postId/like', auth, ctrl.likePagePost);
 router.post('/posts/:postId/comment', auth, ctrl.commentPagePost);
+router.delete('/posts/:postId', auth, ctrl.deletePagePost);
 
 // ─── PAGE STORIES ───
 router.post('/:pageId/story', auth, handleSingleUpload, ctrl.createPageStory);

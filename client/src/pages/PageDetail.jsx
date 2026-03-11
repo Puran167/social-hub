@@ -88,6 +88,9 @@ const PageDetail = () => {
   // Analytics state
   const [analytics, setAnalytics] = useState(null);
 
+  // Followers modal state
+  const [showFollowersModal, setShowFollowersModal] = useState(false);
+
   // Edit/Delete state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({ pageName: '', category: '', description: '' });
@@ -338,6 +341,14 @@ const PageDetail = () => {
     try { await API.put(`/pages/discussions/${discId}/like`); fetchDiscussions(); } catch {}
   };
 
+  const handleDeletePost = async (postId) => {
+    try {
+      await API.delete(`/pages/posts/${postId}`);
+      toast.success('Post deleted');
+      fetchPosts();
+    } catch { toast.error('Delete failed'); }
+  };
+
   const openEditModal = () => {
     setEditForm({ pageName: page.pageName, category: page.category, description: page.description || '' });
     setEditProfilePhoto(null);
@@ -423,7 +434,9 @@ const PageDetail = () => {
               </div>
               {page.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{page.description}</p>}
               <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                <span className="flex items-center gap-1"><HiUserGroup className="w-4 h-4" /> {page.followers?.length || 0} followers</span>
+                <button onClick={() => setShowFollowersModal(true)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                  <HiUserGroup className="w-4 h-4" /> {page.followers?.length || 0} followers
+                </button>
                 <span className="flex items-center gap-1"><HiDocumentText className="w-4 h-4" /> {page.postCount || 0} posts</span>
               </div>
             </div>
@@ -484,13 +497,20 @@ const PageDetail = () => {
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-hover">
                   {page.profilePhoto ? <img src={page.profilePhoto} alt="" className="w-full h-full object-cover" /> : <CatIcon className="w-5 h-5 m-auto text-gray-400 mt-2.5" />}
                 </div>
-                <div>
+                <div className="flex-1">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold text-sm">{page.pageName}</span>
                     {page.verified && <HiCheckBadge className="w-3.5 h-3.5 text-blue-500" />}
                   </div>
                   <span className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</span>
                 </div>
+                {isAdmin && (
+                  <button onClick={() => handleDeletePost(post._id)}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Delete post">
+                    <HiTrash className="w-4 h-4" />
+                  </button>
+                )}
               </div>
               {post.caption && <p className="text-sm">{post.caption}</p>}
               {post.mediaUrl && post.type === 'photo' && (
@@ -1062,6 +1082,29 @@ const PageDetail = () => {
           <input type="text" value={playlistTitle} onChange={e => setPlaylistTitle(e.target.value)}
             className="input-field w-full" placeholder="Playlist name" />
           <button onClick={handleCreatePlaylist} className="btn-primary w-full">Create Playlist</button>
+        </div>
+      </Modal>
+
+      {/* Followers Modal */}
+      <Modal isOpen={showFollowersModal} onClose={() => setShowFollowersModal(false)} title={`Followers (${page.followers?.length || 0})`} size="sm">
+        <div className="space-y-1 max-h-80 overflow-y-auto">
+          {(!page.followers || page.followers.length === 0) && (
+            <p className="text-center text-gray-500 py-6 text-sm">No followers yet</p>
+          )}
+          {page.followers?.map(f => (
+            <div key={f._id} className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-dark-elevated transition-colors">
+              <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-hover flex-shrink-0">
+                {f.profilePhoto ? (
+                  <img src={f.profilePhoto} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-sm">
+                    {f.name?.charAt(0)?.toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <span className="font-semibold text-sm">{f.name}</span>
+            </div>
+          ))}
         </div>
       </Modal>
 

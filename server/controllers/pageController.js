@@ -198,6 +198,19 @@ exports.commentPagePost = async (req, res) => {
   }
 };
 
+exports.deletePagePost = async (req, res) => {
+  try {
+    const post = await PagePost.findById(req.params.postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+    const page = await Page.findById(post.page);
+    if (!isPageAdmin(page, req.user._id)) return res.status(403).json({ message: 'Not authorized' });
+    await post.deleteOne();
+    res.json({ message: 'Post deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
 // ═══════════════════════════════════════════
 // FEATURE 4: PAGE STORIES
 // ═══════════════════════════════════════════
