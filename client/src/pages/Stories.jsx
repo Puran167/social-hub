@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiPlus, HiXMark, HiChevronLeft, HiChevronRight, HiEye, HiPause, HiPlay } from 'react-icons/hi2';
 import API from '../services/api';
@@ -219,13 +220,14 @@ const Stories = () => {
       )}
 
       {/* ========== FULL-SCREEN STORY VIEWER (Instagram-like) ========== */}
-      <AnimatePresence>
-        {viewingGroup && currentStory && (
+      {viewingGroup && currentStory && createPortal(
+        <AnimatePresence>
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black"
+            className="fixed inset-0 z-[9999] bg-black"
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, width: '100vw', height: '100vh' }}
           >
             {/* Centered story card */}
             <div className="w-full h-full flex items-center justify-center">
@@ -348,8 +350,9 @@ const Stories = () => {
               <HiChevronRight className="w-5 h-5 text-white" />
             </button>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Upload Modal */}
       <Modal isOpen={showUpload} onClose={() => setShowUpload(false)} title="Add Story" size="md">
