@@ -5,6 +5,7 @@ const PageMessage = require('../models/PageMessage');
 const PagePlaylist = require('../models/PagePlaylist');
 const PageEvent = require('../models/PageEvent');
 const PageProduct = require('../models/PageProduct');
+const PageOrder = require('../models/PageOrder');
 const PageDiscussion = require('../models/PageDiscussion');
 
 // ─── HELPER: check if user is admin of page ───
@@ -461,6 +462,110 @@ exports.getProducts = async (req, res) => {
   try {
     const products = await PageProduct.find({ page: req.params.pageId }).sort({ createdAt: -1 });
     res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.getProduct = async (req, res) => {
+  try {
+    const product = await PageProduct.findById(req.params.productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.updateProduct = async (req, res) => {
+  try {
+    const product = await PageProduct.findById(req.params.productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    const page = await Page.findById(product.page);
+    if (!isPageAdmin(page, req.user._id)) return res.status(403).json({ message: 'Not authorized' });
+    product.productName = req.body.productName || product.productName;
+    product.price = req.body.price ? parseFloat(req.body.price) : product.price;
+    product.description = req.body.description ?? product.description;
+    if (req.file) { product.productImage = req.file.path; product.cloudinaryId = req.file.filename; }
+    await product.save();
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.deleteProduct = async (req, res) => {
+  try {
+    const product = await PageProduct.findById(req.params.productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    const page = await Page.findById(product.page);
+    if (!isPageAdmin(page, req.user._id)) return res.status(403).json({ message: 'Not authorized' });
+    await PageOrder.deleteMany({ product: product._id });
+    await product.deleteOne();
+    res.json({ message: 'Product deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.buyProduct = async (req, res) => {
+  try {
+    const product = await PageProduct.findById(req.params.productId);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    const { fullName, phone, address, city, pincode, note } = req.body;
+    if (!fullName || !phone || !address) return res.status(400).json({ message: 'Name, phone and address are required' });
+    const quantity = Math.max(1, parseInt(req.body.quantity) || 1);
+    const order = await PageOrder.create({
+      page: product.page, product: product._id, buyer: req.user._id,
+      quantity, totalPrice: product.price * quantity,
+      shippingInfo: { fullName, phone, address, city: city || '', pincode: pincode || '' },
+      note: note || '',
+    });
+    const populated = await PageOrder.findById(order._id)
+      .populate('buyer', 'name avatar')
+      .populate('product', 'productName price productImage');
+    res.status(201).json(populated);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.getPageOrders = async (req, res) => {
+  try {
+    const page = await Page.findById(req.params.pageId);
+    if (!page) return res.status(404).json({ message: 'Page not found' });
+    if (!isPageAdmin(page, req.user._id)) return res.status(403).json({ message: 'Not authorized' });
+    const orders = await PageOrder.find({ page: page._id }).sort({ createdAt: -1 })
+      .populate('buyer', 'name avatar')
+      .populate('product', 'productName price productImage');
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.updateOrderStatus = async (req, res) => {
+  try {
+    const order = await PageOrder.findById(req.params.orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    const page = await Page.findById(order.page);
+    if (!isPageAdmin(page, req.user._id)) return res.status(403).json({ message: 'Not authorized' });
+    order.status = req.body.status;
+    await order.save();
+    const populated = await PageOrder.findById(order._id)
+      .populate('buyer', 'name avatar')
+      .populate('product', 'productName price productImage');
+    res.json(populated);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.getMyOrders = async (req, res) => {
+  try {
+    const orders = await PageOrder.find({ buyer: req.user._id, page: req.params.pageId }).sort({ createdAt: -1 })
+      .populate('product', 'productName price productImage');
+    res.json(orders);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }

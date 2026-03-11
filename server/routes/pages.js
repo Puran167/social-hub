@@ -94,6 +94,13 @@ router.delete('/:pageId/admin/:userId', auth, ctrl.removeAdmin);
 // ─── PAGE SHOP ───
 router.post('/:pageId/product', auth, handleSingleUpload, ctrl.createProduct);
 router.get('/:pageId/products', auth, ctrl.getProducts);
+router.get('/product/:productId', auth, ctrl.getProduct);
+router.put('/product/:productId', auth, handleSingleUpload, ctrl.updateProduct);
+router.delete('/product/:productId', auth, ctrl.deleteProduct);
+router.post('/product/:productId/buy', auth, ctrl.buyProduct);
+router.get('/:pageId/orders', auth, ctrl.getPageOrders);
+router.get('/:pageId/my-orders', auth, ctrl.getMyOrders);
+router.put('/order/:orderId/status', auth, ctrl.updateOrderStatus);
 
 // ─── PAGE COMMUNITY ───
 router.post('/:pageId/discussion', auth, ctrl.createDiscussion);

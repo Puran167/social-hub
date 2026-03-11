@@ -7,7 +7,8 @@ import {
   HiUsers, HiAcademicCap, HiPhoto, HiVideoCamera, HiPaperAirplane,
   HiCalendarDays, HiShoppingBag, HiChartBar, HiCog6Tooth, HiXMark,
   HiEllipsisHorizontal, HiChatBubbleOvalLeft, HiHandThumbUp, HiFilm,
-  HiPlay, HiPause, HiPencilSquare, HiTrash
+  HiPlay, HiPause, HiPencilSquare, HiTrash, HiTruck, HiMapPin, HiPhone,
+  HiCreditCard, HiClipboardDocumentList
 } from 'react-icons/hi2';
 import API from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -61,6 +62,17 @@ const PageDetail = () => {
   const [showProductModal, setShowProductModal] = useState(false);
   const [productForm, setProductForm] = useState({ productName: '', price: '', description: '' });
   const [productFile, setProductFile] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [showBuyModal, setShowBuyModal] = useState(false);
+  const [buyForm, setBuyForm] = useState({ fullName: '', phone: '', address: '', city: '', pincode: '', quantity: 1, note: '' });
+  const [buying, setBuying] = useState(false);
+  const [orders, setOrders] = useState([]);
+  const [myOrders, setMyOrders] = useState([]);
+  const [shopSubTab, setShopSubTab] = useState('products');
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editProductForm, setEditProductForm] = useState({ productName: '', price: '', description: '' });
+  const [editProductFile, setEditProductFile] = useState(null);
+  const [savingProduct, setSavingProduct] = useState(false);
 
   // Playlists state
   const [playlists, setPlaylists] = useState([]);
@@ -94,7 +106,7 @@ const PageDetail = () => {
     if (tab === 'stories') fetchStories();
     if (tab === 'messages') fetchMessages();
     if (tab === 'events') fetchEvents();
-    if (tab === 'shop') fetchProducts();
+    if (tab === 'shop') { fetchProducts(); if (isAdmin) fetchOrders(); fetchMyOrders(); }
     if (tab === 'playlists') fetchPlaylists();
     if (tab === 'community') fetchDiscussions();
     if (tab === 'analytics') fetchAnalytics();
@@ -232,6 +244,69 @@ const PageDetail = () => {
     } catch { toast.error('Failed'); }
   };
 
+  const fetchOrders = async () => {
+    try { const { data } = await API.get(`/pages/${pageId}/orders`); setOrders(data); } catch {}
+  };
+  const fetchMyOrders = async () => {
+    try { const { data } = await API.get(`/pages/${pageId}/my-orders`); setMyOrders(data); } catch {}
+  };
+
+  const handleBuyProduct = async (e) => {
+    e.preventDefault();
+    if (!buyForm.fullName || !buyForm.phone || !buyForm.address) return toast.error('Fill in required fields');
+    setBuying(true);
+    try {
+      await API.post(`/pages/product/${selectedProduct._id}/buy`, buyForm);
+      toast.success('Order placed successfully!');
+      setShowBuyModal(false);
+      setSelectedProduct(null);
+      setBuyForm({ fullName: '', phone: '', address: '', city: '', pincode: '', quantity: 1, note: '' });
+      fetchMyOrders();
+      if (isAdmin) fetchOrders();
+    } catch { toast.error('Order failed'); }
+    setBuying(false);
+  };
+
+  const handleUpdateOrderStatus = async (orderId, status) => {
+    try {
+      await API.put(`/pages/order/${orderId}/status`, { status });
+      toast.success(`Order ${status}`);
+      fetchOrders();
+    } catch { toast.error('Failed'); }
+  };
+
+  const openEditProduct = (prod) => {
+    setEditingProduct(prod);
+    setEditProductForm({ productName: prod.productName, price: prod.price, description: prod.description || '' });
+    setEditProductFile(null);
+  };
+
+  const handleEditProduct = async (e) => {
+    e.preventDefault();
+    setSavingProduct(true);
+    try {
+      const form = new FormData();
+      form.append('productName', editProductForm.productName);
+      form.append('price', editProductForm.price);
+      form.append('description', editProductForm.description);
+      if (editProductFile) form.append('media', editProductFile);
+      await API.put(`/pages/product/${editingProduct._id}`, form);
+      toast.success('Product updated!');
+      setEditingProduct(null);
+      fetchProducts();
+    } catch { toast.error('Update failed'); }
+    setSavingProduct(false);
+  };
+
+  const handleDeleteProduct = async (prodId) => {
+    try {
+      await API.delete(`/pages/product/${prodId}`);
+      toast.success('Product deleted');
+      setSelectedProduct(null);
+      fetchProducts();
+    } catch { toast.error('Delete failed'); }
+  };
+
   const handleCreatePlaylist = async () => {
     if (!playlistTitle.trim()) return;
     try {
@@ -313,6 +388,7 @@ const PageDetail = () => {
     { key: 'messages', label: 'Chat', icon: HiChatBubbleLeft },
     ...(page.category === 'Music' ? [{ key: 'playlists', label: 'Playlists', icon: HiMusicalNote }] : []),
     { key: 'shop', label: 'Shop', icon: HiShoppingBag },
+    ...(isAdmin ? [{ key: 'orders', label: 'Orders', icon: HiClipboardDocumentList }] : []),
     ...(isAdmin ? [{ key: 'analytics', label: 'Analytics', icon: HiChartBar }] : []),
   ];
 
@@ -552,19 +628,58 @@ const PageDetail = () => {
       {tab === 'shop' && (
         <div className="space-y-4">
           {isAdmin && (
-            <button onClick={() => setShowProductModal(true)} className="btn-primary text-sm flex items-center gap-2">
-              <HiPlus className="w-4 h-4" /> Add Product
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => setShowProductModal(true)} className="btn-primary text-sm flex items-center gap-2">
+                <HiPlus className="w-4 h-4" /> Add Product
+              </button>
+            </div>
           )}
+
+          {/* My Orders (for any user) */}
+          {myOrders.length > 0 && (
+            <div className="card space-y-3">
+              <h3 className="font-bold text-sm flex items-center gap-2"><HiTruck className="w-4 h-4" /> My Orders</h3>
+              {myOrders.map(order => (
+                <div key={order._id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-dark-elevated">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-dark-hover flex-shrink-0">
+                    {order.product?.productImage ? <img src={order.product.productImage} alt="" className="w-full h-full object-cover" /> : <HiShoppingBag className="w-6 h-6 text-gray-400 m-auto mt-3" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{order.product?.productName}</p>
+                    <p className="text-xs text-gray-500">Qty: {order.quantity} · ₹{order.totalPrice}</p>
+                  </div>
+                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                    order.status === 'delivered' ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' :
+                    order.status === 'shipped' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' :
+                    order.status === 'confirmed' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' :
+                    order.status === 'cancelled' ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400' :
+                    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                  }`}>{order.status}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {products.length === 0 && <p className="text-center text-gray-500 py-10">No products yet</p>}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {products.map(prod => (
-              <div key={prod._id} className="card !p-0 overflow-hidden group">
-                <div className="aspect-square bg-gray-100 dark:bg-dark-elevated overflow-hidden">
+              <motion.div key={prod._id} whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }}
+                className="card !p-0 overflow-hidden group cursor-pointer" onClick={() => setSelectedProduct(prod)}>
+                <div className="aspect-square bg-gray-100 dark:bg-dark-elevated overflow-hidden relative">
                   {prod.productImage ? (
                     <img src={prod.productImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center"><HiShoppingBag className="w-10 h-10 text-gray-300" /></div>
+                  )}
+                  {isAdmin && (
+                    <div className="absolute top-2 right-2 flex gap-1" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => openEditProduct(prod)} className="p-1.5 rounded-lg bg-white/90 dark:bg-dark-card/90 shadow-sm hover:bg-white transition-colors">
+                        <HiPencilSquare className="w-3.5 h-3.5 text-gray-600" />
+                      </button>
+                      <button onClick={() => handleDeleteProduct(prod._id)} className="p-1.5 rounded-lg bg-white/90 dark:bg-dark-card/90 shadow-sm hover:bg-red-50 transition-colors">
+                        <HiTrash className="w-3.5 h-3.5 text-red-500" />
+                      </button>
+                    </div>
                   )}
                 </div>
                 <div className="p-3">
@@ -572,9 +687,59 @@ const PageDetail = () => {
                   <p className="text-primary font-bold text-sm mt-1">₹{prod.price}</p>
                   {prod.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{prod.description}</p>}
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* ════════ TAB: ORDERS (Admin) ════════ */}
+      {tab === 'orders' && isAdmin && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold flex items-center gap-2"><HiClipboardDocumentList className="w-5 h-5" /> Page Orders</h2>
+          {orders.length === 0 && <p className="text-center text-gray-500 py-10">No orders yet</p>}
+          {orders.map(order => (
+            <div key={order._id} className="card space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-dark-hover flex-shrink-0">
+                  {order.product?.productImage ? <img src={order.product.productImage} alt="" className="w-full h-full object-cover" /> : <HiShoppingBag className="w-6 h-6 text-gray-400 m-auto mt-3" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">{order.product?.productName}</p>
+                  <p className="text-xs text-gray-500">Qty: {order.quantity} · ₹{order.totalPrice}</p>
+                </div>
+                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
+                  order.status === 'delivered' ? 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400' :
+                  order.status === 'shipped' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' :
+                  order.status === 'confirmed' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' :
+                  order.status === 'cancelled' ? 'bg-red-100 text-red-600 dark:bg-red-900/20 dark:text-red-400' :
+                  'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                }`}>{order.status}</span>
+              </div>
+              <div className="text-xs text-gray-500 space-y-1 border-t border-gray-100 dark:border-dark-hover pt-2">
+                <p><span className="font-medium">Buyer:</span> {order.buyer?.name}</p>
+                <p className="flex items-center gap-1"><HiMapPin className="w-3 h-3" /> {order.shippingInfo?.address}{order.shippingInfo?.city ? `, ${order.shippingInfo.city}` : ''}{order.shippingInfo?.pincode ? ` - ${order.shippingInfo.pincode}` : ''}</p>
+                <p className="flex items-center gap-1"><HiPhone className="w-3 h-3" /> {order.shippingInfo?.phone}</p>
+                {order.note && <p><span className="font-medium">Note:</span> {order.note}</p>}
+              </div>
+              {order.status !== 'delivered' && order.status !== 'cancelled' && (
+                <div className="flex gap-2 pt-1">
+                  {order.status === 'pending' && (
+                    <>
+                      <button onClick={() => handleUpdateOrderStatus(order._id, 'confirmed')} className="text-xs px-3 py-1.5 rounded-lg bg-amber-100 text-amber-700 hover:bg-amber-200 font-medium transition-colors">Confirm</button>
+                      <button onClick={() => handleUpdateOrderStatus(order._id, 'cancelled')} className="text-xs px-3 py-1.5 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 font-medium transition-colors">Cancel</button>
+                    </>
+                  )}
+                  {order.status === 'confirmed' && (
+                    <button onClick={() => handleUpdateOrderStatus(order._id, 'shipped')} className="text-xs px-3 py-1.5 rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition-colors">Mark Shipped</button>
+                  )}
+                  {order.status === 'shipped' && (
+                    <button onClick={() => handleUpdateOrderStatus(order._id, 'delivered')} className="text-xs px-3 py-1.5 rounded-lg bg-green-100 text-green-700 hover:bg-green-200 font-medium transition-colors">Mark Delivered</button>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
@@ -776,6 +941,119 @@ const PageDetail = () => {
             className="input-field w-full" placeholder="Description" rows={2} />
           <button type="submit" className="btn-primary w-full">Add Product</button>
         </form>
+      </Modal>
+
+      {/* Product Detail Modal */}
+      <Modal isOpen={!!selectedProduct && !showBuyModal} onClose={() => setSelectedProduct(null)} title={selectedProduct?.productName || 'Product'} size="md">
+        {selectedProduct && (
+          <div className="space-y-4">
+            <div className="aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-dark-elevated">
+              {selectedProduct.productImage ? (
+                <img src={selectedProduct.productImage} alt="" className="w-full h-full object-contain" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center"><HiShoppingBag className="w-16 h-16 text-gray-300" /></div>
+              )}
+            </div>
+            <div>
+              <h2 className="font-bold text-lg">{selectedProduct.productName}</h2>
+              <p className="text-primary font-extrabold text-2xl mt-1">₹{selectedProduct.price}</p>
+              {selectedProduct.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-3 leading-relaxed">{selectedProduct.description}</p>}
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setShowBuyModal(true)}
+                className="btn-primary flex-1 flex items-center justify-center gap-2 py-3 text-base font-bold">
+                <HiCreditCard className="w-5 h-5" /> Buy Now
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* Buy Product Modal */}
+      <Modal isOpen={showBuyModal} onClose={() => setShowBuyModal(false)} title="Place Order" size="md">
+        {selectedProduct && (
+          <form onSubmit={handleBuyProduct} className="space-y-4">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-dark-elevated">
+              <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-200 dark:bg-dark-hover flex-shrink-0">
+                {selectedProduct.productImage ? <img src={selectedProduct.productImage} alt="" className="w-full h-full object-cover" /> : <HiShoppingBag className="w-7 h-7 text-gray-400 m-auto mt-3.5" />}
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-sm">{selectedProduct.productName}</p>
+                <p className="text-primary font-bold">₹{selectedProduct.price}</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Quantity</label>
+              <input type="number" min="1" value={buyForm.quantity} onChange={e => setBuyForm({ ...buyForm, quantity: parseInt(e.target.value) || 1 })}
+                className="input-field w-full" />
+              <p className="text-xs text-gray-400 mt-1">Total: ₹{selectedProduct.price * (buyForm.quantity || 1)}</p>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Full Name *</label>
+              <input type="text" value={buyForm.fullName} onChange={e => setBuyForm({ ...buyForm, fullName: e.target.value })}
+                className="input-field w-full" required />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Phone *</label>
+              <input type="tel" value={buyForm.phone} onChange={e => setBuyForm({ ...buyForm, phone: e.target.value })}
+                className="input-field w-full" required />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Delivery Address *</label>
+              <textarea value={buyForm.address} onChange={e => setBuyForm({ ...buyForm, address: e.target.value })}
+                className="input-field w-full" rows={2} required />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">City</label>
+                <input type="text" value={buyForm.city} onChange={e => setBuyForm({ ...buyForm, city: e.target.value })}
+                  className="input-field w-full" />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Pincode</label>
+                <input type="text" value={buyForm.pincode} onChange={e => setBuyForm({ ...buyForm, pincode: e.target.value })}
+                  className="input-field w-full" />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1 block">Note (optional)</label>
+              <input type="text" value={buyForm.note} onChange={e => setBuyForm({ ...buyForm, note: e.target.value })}
+                className="input-field w-full" placeholder="Any special instructions" />
+            </div>
+
+            <button type="submit" disabled={buying} className="btn-primary w-full py-3 text-base font-bold disabled:opacity-50">
+              {buying ? 'Placing Order...' : `Place Order · ₹${selectedProduct.price * (buyForm.quantity || 1)}`}
+            </button>
+          </form>
+        )}
+      </Modal>
+
+      {/* Edit Product Modal */}
+      <Modal isOpen={!!editingProduct} onClose={() => setEditingProduct(null)} title="Edit Product" size="md">
+        {editingProduct && (
+          <form onSubmit={handleEditProduct} className="space-y-4">
+            <FileDropzone onDrop={files => setEditProductFile(files[0])} accept={{ 'image/*': ['.jpg', '.png', '.webp'] }}
+              label="Change product image">
+              {editProductFile ? <p className="text-sm text-primary">{editProductFile.name}</p> :
+                editingProduct.productImage ? <img src={editingProduct.productImage} alt="" className="w-20 h-20 object-cover rounded-lg mx-auto" /> : null}
+            </FileDropzone>
+            <input type="text" value={editProductForm.productName} onChange={e => setEditProductForm({ ...editProductForm, productName: e.target.value })}
+              className="input-field w-full" placeholder="Product name" required />
+            <input type="number" value={editProductForm.price} onChange={e => setEditProductForm({ ...editProductForm, price: e.target.value })}
+              className="input-field w-full" placeholder="Price" required min="0" step="0.01" />
+            <textarea value={editProductForm.description} onChange={e => setEditProductForm({ ...editProductForm, description: e.target.value })}
+              className="input-field w-full" placeholder="Description" rows={2} />
+            <button type="submit" disabled={savingProduct} className="btn-primary w-full disabled:opacity-50">
+              {savingProduct ? 'Saving...' : 'Save Changes'}
+            </button>
+          </form>
+        )}
       </Modal>
 
       {/* Playlist Modal */}
