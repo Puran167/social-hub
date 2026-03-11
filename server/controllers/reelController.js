@@ -20,8 +20,10 @@ exports.createReel = async (req, res) => {
 
 exports.getReels = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query;
-    const reels = await Reel.find()
+    const { page = 1, limit = 10, user } = req.query;
+    const query = {};
+    if (user) query.user = user;
+    const reels = await Reel.find(query)
       .populate('user', 'name profilePhoto')
       .populate('comments.user', 'name profilePhoto')
       .sort({ createdAt: -1 })

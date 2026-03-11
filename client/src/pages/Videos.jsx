@@ -24,7 +24,7 @@ const Videos = () => {
 
   const fetchVideos = async () => {
     try {
-      const { data } = await API.get('/videos');
+      const { data } = await API.get(`/videos?user=${user._id}`);
       setVideos(data.videos || []);
     } catch (err) { /* ignore */ }
     setLoading(false);

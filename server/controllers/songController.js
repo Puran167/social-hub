@@ -23,8 +23,10 @@ exports.uploadSong = async (req, res) => {
 
 exports.getSongs = async (req, res) => {
   try {
-    const { page = 1, limit = 20, search } = req.query;
-    const query = search ? { $text: { $search: search } } : {};
+    const { page = 1, limit = 20, search, user } = req.query;
+    const query = {};
+    if (search) query.$text = { $search: search };
+    if (user) query.uploadedBy = user;
     const songs = await Song.find(query)
       .populate('uploadedBy', 'name profilePhoto')
       .sort({ createdAt: -1 })

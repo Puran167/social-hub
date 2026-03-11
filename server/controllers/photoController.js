@@ -20,8 +20,10 @@ exports.uploadPhoto = async (req, res) => {
 
 exports.getPhotos = async (req, res) => {
   try {
-    const { page = 1, limit = 20, album } = req.query;
-    const query = album ? { album } : {};
+    const { page = 1, limit = 20, album, user } = req.query;
+    const query = {};
+    if (album) query.album = album;
+    if (user) query.uploadedBy = user;
     const photos = await Photo.find(query)
       .populate('uploadedBy', 'name profilePhoto')
       .populate('comments.user', 'name profilePhoto')

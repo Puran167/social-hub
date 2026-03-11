@@ -33,7 +33,7 @@ const Music = () => {
   const fetchData = async () => {
     try {
       const [songsRes, myRes, playlistRes] = await Promise.all([
-        API.get('/songs'), API.get('/songs/my'), API.get('/playlists'),
+        API.get(`/songs?user=${user._id}`), API.get('/songs/my'), API.get('/playlists'),
       ]);
       setSongs(songsRes.data.songs || []);
       setMySongs(myRes.data || []);

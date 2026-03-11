@@ -27,7 +27,7 @@ const Reels = () => {
 
   const fetchReels = async () => {
     try {
-      const { data } = await API.get('/reels');
+      const { data } = await API.get(`/reels?user=${user._id}`);
       setReels(data || []);
     } catch (err) { /* ignore */ }
     setLoading(false);

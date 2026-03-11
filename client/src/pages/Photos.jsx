@@ -36,7 +36,7 @@ const Photos = () => {
 
   const fetchPhotos = async () => {
     try {
-      const { data } = await API.get('/photos');
+      const { data } = await API.get(`/photos?user=${user._id}`);
       setPhotos(data.photos || []);
     } catch (err) { /* ignore */ }
     setLoading(false);
