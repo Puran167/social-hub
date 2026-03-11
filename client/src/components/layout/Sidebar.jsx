@@ -30,7 +30,7 @@ const bottomLinks = [
 
 const mobileLinks = [
   { to: '/', icon: HiHome, label: 'Home' },
-  { to: '/music', icon: HiMusicalNote, label: 'Music' },
+  { to: '/feed', icon: HiNewspaper, label: 'Feed' },
   { to: '/reels', icon: HiFilm, label: 'Reels' },
   { to: '/chat', icon: HiChatBubbleLeftRight, label: 'Chat' },
   { to: '/profile', icon: HiUser, label: 'Profile' },
