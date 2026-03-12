@@ -3,10 +3,19 @@ const crypto = require('crypto');
 const PageProduct = require('../models/PageProduct');
 const PageOrder = require('../models/PageOrder');
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+let razorpay = null;
+function getRazorpay() {
+  if (!razorpay) {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new Error('Razorpay keys not configured');
+    }
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  }
+  return razorpay;
+}
 
 // Create Razorpay order
 exports.createOrder = async (req, res) => {
@@ -18,7 +27,7 @@ exports.createOrder = async (req, res) => {
     const qty = Math.max(1, parseInt(quantity) || 1);
     const amount = product.price * qty * 100; // Razorpay expects paise
 
-    const order = await razorpay.orders.create({
+    const order = await getRazorpay().orders.create({
       amount,
       currency: 'INR',
       receipt: `order_${Date.now()}`,
