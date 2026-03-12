@@ -10,5 +10,7 @@ router.put('/:id/media', auth, ctrl.updateMedia);
 router.post('/:id/queue', auth, ctrl.addToQueue);
 router.put('/:id/end', auth, ctrl.endParty);
 router.put('/:id/leave', auth, ctrl.leaveParty);
+router.delete('/:id', auth, ctrl.deleteParty);
+router.post('/:id/chat', auth, ctrl.saveChatMessage);
 
 module.exports = router;

@@ -153,3 +153,38 @@ exports.leaveParty = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+exports.deleteParty = async (req, res) => {
+  try {
+    const party = await Party.findById(req.params.id);
+    if (!party) return res.status(404).json({ message: 'Party not found' });
+    if (party.host.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Only host can delete party' });
+    }
+    const io = req.app.get('io');
+    io.to(`party-${party._id}`).emit('party-ended');
+    await party.deleteOne();
+    res.json({ message: 'Party deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.saveChatMessage = async (req, res) => {
+  try {
+    const party = await Party.findById(req.params.id);
+    if (!party) return res.status(404).json({ message: 'Party not found' });
+    const msg = {
+      sender: req.user._id,
+      senderName: req.user.name,
+      senderPhoto: req.user.profilePhoto || '',
+      message: req.body.message,
+      createdAt: new Date(),
+    };
+    party.chat.push(msg);
+    await party.save();
+    res.json(msg);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
