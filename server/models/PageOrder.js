@@ -19,6 +19,11 @@ const pageOrderSchema = new mongoose.Schema({
     default: 'pending',
   },
   note: { type: String, default: '' },
+  paymentInfo: {
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
+  },
 }, { timestamps: true });
 
 pageOrderSchema.index({ page: 1, createdAt: -1 });

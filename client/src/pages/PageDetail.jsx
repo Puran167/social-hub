@@ -259,15 +259,61 @@ const PageDetail = () => {
     if (!buyForm.fullName || !buyForm.phone || !buyForm.address) return toast.error('Fill in required fields');
     setBuying(true);
     try {
-      await API.post(`/pages/product/${selectedProduct._id}/buy`, buyForm);
-      toast.success('Order placed successfully!');
-      setShowBuyModal(false);
-      setSelectedProduct(null);
-      setBuyForm({ fullName: '', phone: '', address: '', city: '', pincode: '', quantity: 1, note: '' });
-      fetchMyOrders();
-      if (isAdmin) fetchOrders();
-    } catch { toast.error('Order failed'); }
-    setBuying(false);
+      // Step 1: Create Razorpay order
+      const { data } = await API.post('/payment/create-order', {
+        productId: selectedProduct._id,
+        quantity: buyForm.quantity || 1,
+      });
+
+      // Step 2: Open Razorpay checkout
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: data.currency,
+        name: 'Personal Social Hub',
+        description: selectedProduct.productName,
+        order_id: data.orderId,
+        handler: async (response) => {
+          try {
+            // Step 3: Verify payment and create order
+            await API.post('/payment/verify', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              productId: selectedProduct._id,
+              ...buyForm,
+            });
+            toast.success('Payment successful! Order placed.');
+            setShowBuyModal(false);
+            setSelectedProduct(null);
+            setBuyForm({ fullName: '', phone: '', address: '', city: '', pincode: '', quantity: 1, note: '' });
+            fetchMyOrders();
+            if (isAdmin) fetchOrders();
+          } catch {
+            toast.error('Payment verification failed');
+          }
+          setBuying(false);
+        },
+        prefill: {
+          name: buyForm.fullName,
+          contact: buyForm.phone,
+        },
+        theme: { color: '#7C3AED' },
+        modal: {
+          ondismiss: () => setBuying(false),
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', () => {
+        toast.error('Payment failed. Please try again.');
+        setBuying(false);
+      });
+      rzp.open();
+    } catch {
+      toast.error('Could not initiate payment');
+      setBuying(false);
+    }
   };
 
   const handleUpdateOrderStatus = async (orderId, status) => {
