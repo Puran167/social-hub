@@ -452,148 +452,187 @@ const PageDetail = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Back */}
-      <button onClick={() => navigate('/pages')} className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-colors">
-        <HiArrowLeft className="w-4 h-4" /> Back to Pages
-      </button>
+      <motion.button
+        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+        onClick={() => navigate('/pages')}
+        className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary transition-all group">
+        <HiArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Pages
+      </motion.button>
 
       {/* Cover + profile header */}
-      <div className="card overflow-hidden !p-0">
-        <div className={`h-40 sm:h-52 bg-gradient-to-r ${gradColor} relative`}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-2xl overflow-hidden shadow-xl shadow-black/5 dark:shadow-black/20 bg-white dark:bg-dark-card">
+        <div className={`h-48 sm:h-64 bg-gradient-to-br ${gradColor} relative`}>
           {page.coverPhoto && <img src={page.coverPhoto} alt="" className="w-full h-full object-cover" />}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+          {/* Floating action buttons on cover */}
+          <div className="absolute top-4 right-4 flex gap-2">
+            {isAdmin && (
+              <>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={openEditModal}
+                  className="p-2.5 rounded-xl bg-white/15 backdrop-blur-md hover:bg-white/25 transition-all text-white shadow-lg"
+                  title="Edit Page">
+                  <HiPencilSquare className="w-4.5 h-4.5" />
+                </motion.button>
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setShowDeleteConfirm(true)}
+                  className="p-2.5 rounded-xl bg-red-500/20 backdrop-blur-md hover:bg-red-500/40 transition-all text-white shadow-lg"
+                  title="Delete Page">
+                  <HiTrash className="w-4.5 h-4.5" />
+                </motion.button>
+              </>
+            )}
+          </div>
         </div>
-        <div className="px-5 pb-5 -mt-12 relative z-10">
+        <div className="px-6 pb-6 -mt-16 relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-            <div className="w-24 h-24 rounded-2xl border-4 border-white dark:border-dark-card shadow-lg overflow-hidden flex-shrink-0 bg-white dark:bg-dark-card">
+            <motion.div whileHover={{ scale: 1.03 }} className="w-28 h-28 rounded-2xl border-4 border-white dark:border-dark-card shadow-2xl overflow-hidden flex-shrink-0 bg-white dark:bg-dark-card ring-2 ring-white/20">
               {page.profilePhoto ? (
                 <img src={page.profilePhoto} alt="" className="w-full h-full object-cover" />
               ) : (
                 <div className={`w-full h-full bg-gradient-to-br ${gradColor} flex items-center justify-center`}>
-                  <CatIcon className="w-10 h-10 text-white" />
+                  <CatIcon className="w-12 h-12 text-white" />
                 </div>
               )}
-            </div>
+            </motion.div>
             <div className="flex-1 min-w-0 pt-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-extrabold">{page.pageName}</h1>
-                {page.verified && <HiCheckBadge className="w-5 h-5 text-blue-500" />}
-                <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-dark-elevated text-gray-500">{page.category}</span>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h1 className="text-2xl font-extrabold tracking-tight">{page.pageName}</h1>
+                {page.verified && <HiCheckBadge className="w-6 h-6 text-blue-500" />}
+                <span className={`text-xs px-3 py-1 rounded-full font-semibold bg-gradient-to-r ${gradColor} text-white shadow-sm`}>{page.category}</span>
               </div>
-              {page.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{page.description}</p>}
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                <button onClick={() => setShowFollowersModal(true)} className="flex items-center gap-1 hover:text-primary transition-colors">
-                  <HiUserGroup className="w-4 h-4" /> {page.followers?.length || 0} followers
+              {page.description && <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 leading-relaxed max-w-xl">{page.description}</p>}
+              <div className="flex items-center gap-5 mt-3">
+                <button onClick={() => setShowFollowersModal(true)} className="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-primary transition-colors">
+                  <HiUserGroup className="w-4.5 h-4.5" /> <span className="font-bold text-gray-900 dark:text-white">{page.followers?.length || 0}</span> followers
                 </button>
-                <span className="flex items-center gap-1"><HiDocumentText className="w-4 h-4" /> {page.postCount || 0} posts</span>
+                <span className="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-400">
+                  <HiDocumentText className="w-4.5 h-4.5" /> <span className="font-bold text-gray-900 dark:text-white">{page.postCount || 0}</span> posts
+                </span>
               </div>
             </div>
             <div className="flex gap-2 flex-shrink-0">
               {!isAdmin && (
-                <motion.button whileTap={{ scale: 0.95 }} onClick={handleFollow}
-                  className={`px-5 py-2 rounded-xl font-semibold text-sm transition-all ${isFollowing ? 'bg-gray-100 dark:bg-dark-elevated text-gray-600' : 'btn-primary'}`}>
-                  {isFollowing ? 'Following' : 'Follow'}
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={handleFollow}
+                  className={`px-6 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-md ${
+                    isFollowing
+                      ? 'bg-gray-100 dark:bg-dark-elevated text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-dark-hover shadow-none'
+                      : 'bg-gradient-to-r from-primary to-purple-600 text-white hover:shadow-lg hover:shadow-primary/30'
+                  }`}>
+                  {isFollowing ? '✓ Following' : '+ Follow'}
                 </motion.button>
               )}
-              <button onClick={() => setTab('messages')}
-                className="p-2 rounded-xl bg-gray-100 dark:bg-dark-elevated hover:bg-gray-200 dark:hover:bg-dark-hover transition-colors">
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setTab('messages')}
+                className="p-2.5 rounded-xl bg-gray-100 dark:bg-dark-elevated hover:bg-gray-200 dark:hover:bg-dark-hover transition-all">
                 <HiChatBubbleLeft className="w-5 h-5" />
-              </button>
-              {isAdmin && (
-                <>
-                  <button onClick={openEditModal}
-                    className="p-2 rounded-xl bg-gray-100 dark:bg-dark-elevated hover:bg-gray-200 dark:hover:bg-dark-hover transition-colors"
-                    title="Edit Page">
-                    <HiPencilSquare className="w-5 h-5" />
-                  </button>
-                  <button onClick={() => setShowDeleteConfirm(true)}
-                    className="p-2 rounded-xl bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 text-red-500 transition-colors"
-                    title="Delete Page">
-                    <HiTrash className="w-5 h-5" />
-                  </button>
-                </>
-              )}
+              </motion.button>
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Tab Bar */}
-      <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
-        {tabs.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
-              tab === t.key ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-gray-100 dark:bg-dark-elevated text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-dark-hover'
-            }`}>
-            <t.icon className="w-4 h-4" /> {t.label}
-          </button>
-        ))}
+      <div className="sticky top-0 z-20 bg-white/80 dark:bg-dark-bg/80 backdrop-blur-xl py-2 -mx-2 px-2 rounded-2xl">
+        <div className="flex gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+          {tabs.map(t => (
+            <motion.button key={t.key} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all duration-200 ${
+                tab === t.key
+                  ? 'bg-gradient-to-r from-primary to-purple-600 text-white shadow-lg shadow-primary/25 scale-[1.02]'
+                  : 'bg-gray-100/80 dark:bg-dark-elevated/80 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-dark-hover hover:text-gray-900 dark:hover:text-white'
+              }`}>
+              <t.icon className="w-4 h-4" /> {t.label}
+            </motion.button>
+          ))}
+        </div>
       </div>
 
       {/* ════════ TAB: POSTS ════════ */}
       {tab === 'posts' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {isAdmin && (
-            <button onClick={() => setShowPostModal(true)} className="btn-primary text-sm flex items-center gap-2">
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              onClick={() => setShowPostModal(true)}
+              className="bg-gradient-to-r from-primary to-purple-600 text-white text-sm font-semibold flex items-center gap-2 px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
               <HiPlus className="w-4 h-4" /> Create Post
-            </button>
+            </motion.button>
           )}
-          {posts.length === 0 && <p className="text-center text-gray-500 py-10">No posts yet</p>}
+          {posts.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-dark-elevated flex items-center justify-center mx-auto mb-4">
+                <HiDocumentText className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+              </div>
+              <p className="text-gray-500 font-medium">No posts yet</p>
+              <p className="text-sm text-gray-400 mt-1">Posts from this page will appear here</p>
+            </div>
+          )}
           {posts.map(post => (
-            <motion.div key={post._id} variants={item} initial="hidden" animate="show" className="card space-y-3">
+            <motion.div key={post._id} variants={item} initial="hidden" animate="show"
+              className="bg-white dark:bg-dark-card rounded-2xl shadow-sm hover:shadow-md transition-shadow p-5 space-y-4 border border-gray-100/50 dark:border-dark-border/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-hover">
-                  {page.profilePhoto ? <img src={page.profilePhoto} alt="" className="w-full h-full object-cover" /> : <CatIcon className="w-5 h-5 m-auto text-gray-400 mt-2.5" />}
+                <div className="w-11 h-11 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-hover ring-2 ring-primary/10">
+                  {page.profilePhoto ? <img src={page.profilePhoto} alt="" className="w-full h-full object-cover" /> : <CatIcon className="w-5 h-5 m-auto text-gray-400 mt-3" />}
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold text-sm">{page.pageName}</span>
-                    {page.verified && <HiCheckBadge className="w-3.5 h-3.5 text-blue-500" />}
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-bold text-sm">{page.pageName}</span>
+                    {page.verified && <HiCheckBadge className="w-4 h-4 text-blue-500" />}
                   </div>
-                  <span className="text-xs text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-gray-400">{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                 </div>
                 {isAdmin && (
                   <button onClick={() => handleDeletePost(post._id)}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    className="p-2 rounded-xl text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
                     title="Delete post">
                     <HiTrash className="w-4 h-4" />
                   </button>
                 )}
               </div>
-              {post.caption && <p className="text-sm">{post.caption}</p>}
+              {post.caption && <p className="text-sm leading-relaxed">{post.caption}</p>}
               {post.mediaUrl && post.type === 'photo' && (
-                <img src={post.mediaUrl} alt="" className="rounded-xl w-full max-h-[500px] object-cover" />
+                <div className="rounded-xl overflow-hidden -mx-1">
+                  <img src={post.mediaUrl} alt="" className="w-full max-h-[500px] object-cover hover:scale-[1.01] transition-transform duration-300" />
+                </div>
               )}
               {post.mediaUrl && (post.type === 'reel' || post.type === 'video') && (
                 <video src={post.mediaUrl} controls className="rounded-xl w-full max-h-[500px]" />
               )}
               {post.mediaUrl && post.type === 'music' && (
-                <audio src={post.mediaUrl} controls className="w-full" />
+                <div className="p-4 rounded-xl bg-gradient-to-r from-primary/5 to-purple-500/5 dark:from-primary/10 dark:to-purple-500/10">
+                  <audio src={post.mediaUrl} controls className="w-full" />
+                </div>
               )}
-              <div className="flex items-center gap-4 pt-2 border-t border-gray-100 dark:border-dark-border">
-                <button onClick={() => handleLikePost(post._id)}
-                  className={`flex items-center gap-1 text-sm ${post.likes?.includes(user._id) ? 'text-red-500' : 'text-gray-500 hover:text-red-500'} transition-colors`}>
-                  <HiHeart className="w-5 h-5" /> {post.likes?.length || 0}
-                </button>
-                <span className="flex items-center gap-1 text-sm text-gray-500">
+              <div className="flex items-center gap-1 pt-3 border-t border-gray-100 dark:border-dark-border">
+                <motion.button whileTap={{ scale: 0.9 }} onClick={() => handleLikePost(post._id)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                    post.likes?.includes(user._id)
+                      ? 'text-red-500 bg-red-50 dark:bg-red-900/20'
+                      : 'text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10'
+                  }`}>
+                  <HiHeart className={`w-5 h-5 ${post.likes?.includes(user._id) ? 'fill-current' : ''}`} /> {post.likes?.length || 0}
+                </motion.button>
+                <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm text-gray-500">
                   <HiChatBubbleLeft className="w-5 h-5" /> {post.comments?.length || 0}
                 </span>
               </div>
               {/* Comments */}
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {post.comments?.map((c, i) => (
-                  <div key={i} className="flex gap-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-dark-hover flex-shrink-0" />
-                    <div>
-                      <span className="text-xs font-semibold">{c.user?.name}</span>
-                      <p className="text-xs text-gray-500">{c.text}</p>
+              {post.comments?.length > 0 && (
+                <div className="space-y-2.5 max-h-44 overflow-y-auto pl-1">
+                  {post.comments.map((c, i) => (
+                    <div key={i} className="flex gap-2.5">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-dark-hover dark:to-dark-elevated flex-shrink-0" />
+                      <div className="bg-gray-50 dark:bg-dark-elevated/60 rounded-xl px-3 py-2">
+                        <span className="text-xs font-bold">{c.user?.name}</span>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{c.text}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
               <form onSubmit={e => handleCommentPost(e, post._id)} className="flex gap-2">
                 <input type="text" value={postComment[post._id] || ''}
                   onChange={e => setPostComment(prev => ({ ...prev, [post._id]: e.target.value }))}
-                  className="input-field flex-1 py-1.5 text-sm" placeholder="Add comment..." />
-                <button type="submit" className="text-primary font-semibold text-sm">Post</button>
+                  className="input-field flex-1 py-2 text-sm rounded-xl bg-gray-50 dark:bg-dark-elevated/50" placeholder="Write a comment..." />
+                <motion.button whileTap={{ scale: 0.95 }} type="submit" className="text-primary font-bold text-sm px-3 hover:bg-primary/5 rounded-xl transition-colors">Post</motion.button>
               </form>
             </motion.div>
           ))}
@@ -602,25 +641,41 @@ const PageDetail = () => {
 
       {/* ════════ TAB: STORIES ════════ */}
       {tab === 'stories' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {isAdmin && (
-            <button onClick={() => setShowStoryModal(true)} className="btn-primary text-sm flex items-center gap-2">
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              onClick={() => setShowStoryModal(true)}
+              className="bg-gradient-to-r from-primary to-purple-600 text-white text-sm font-semibold flex items-center gap-2 px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
               <HiPlus className="w-4 h-4" /> Add Story
-            </button>
+            </motion.button>
           )}
-          {stories.length === 0 && <p className="text-center text-gray-500 py-10">No active stories</p>}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {stories.map(story => (
-              <div key={story._id} className="aspect-[9/16] rounded-2xl overflow-hidden relative group">
-                {story.mediaUrl.match(/\.(mp4|mov|webm)$/i) ? (
-                  <video src={story.mediaUrl} className="w-full h-full object-cover" muted />
-                ) : (
-                  <img src={story.mediaUrl} alt="" className="w-full h-full object-cover" />
-                )}
-                <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-black/60 to-transparent">
-                  <p className="text-white text-xs">Expires {new Date(story.expiresAt).toLocaleTimeString()}</p>
-                </div>
+          {stories.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-dark-elevated flex items-center justify-center mx-auto mb-4">
+                <HiFilm className="w-8 h-8 text-gray-300 dark:text-gray-600" />
               </div>
+              <p className="text-gray-500 font-medium">No active stories</p>
+              <p className="text-sm text-gray-400 mt-1">Stories from this page will appear here</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {stories.map(story => (
+              <motion.div key={story._id} whileHover={{ scale: 1.03 }} className="aspect-[9/16] rounded-2xl overflow-hidden relative group shadow-lg cursor-pointer">
+                {story.mediaUrl.match(/\.(mp4|mov|webm)$/i) ? (
+                  <video src={story.mediaUrl} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" muted />
+                ) : (
+                  <img src={story.mediaUrl} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/10" />
+                <div className="absolute top-3 left-3 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full border-2 border-primary overflow-hidden bg-white">
+                    {page.profilePhoto ? <img src={page.profilePhoto} alt="" className="w-full h-full object-cover" /> : <CatIcon className="w-4 h-4 m-auto text-gray-400 mt-1.5" />}
+                  </div>
+                </div>
+                <div className="absolute bottom-0 inset-x-0 p-3">
+                  <p className="text-white/80 text-xs font-medium">Expires {new Date(story.expiresAt).toLocaleTimeString()}</p>
+                </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -628,43 +683,69 @@ const PageDetail = () => {
 
       {/* ════════ TAB: MESSAGES ════════ */}
       {tab === 'messages' && (
-        <div className="card !p-0 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 dark:border-dark-border">
-            <h3 className="font-bold text-sm">Chat with {page.pageName}</h3>
+        <div className="rounded-2xl overflow-hidden bg-white dark:bg-dark-card shadow-sm border border-gray-100/50 dark:border-dark-border/50">
+          <div className="px-5 py-4 border-b border-gray-100 dark:border-dark-border bg-gradient-to-r from-primary/5 to-purple-500/5 dark:from-primary/10 dark:to-purple-500/10">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-hover ring-2 ring-primary/20">
+                {page.profilePhoto ? <img src={page.profilePhoto} alt="" className="w-full h-full object-cover" /> : <CatIcon className="w-4 h-4 m-auto text-gray-400 mt-2" />}
+              </div>
+              <div>
+                <h3 className="font-bold text-sm">{page.pageName}</h3>
+                <p className="text-xs text-gray-400">Page chat</p>
+              </div>
+            </div>
           </div>
-          <div className="h-80 overflow-y-auto p-4 space-y-3">
+          <div className="h-96 overflow-y-auto p-5 space-y-3 bg-gray-50/50 dark:bg-dark-bg/30">
+            {messages.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <HiChatBubbleLeft className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">Start a conversation</p>
+              </div>
+            )}
             {messages.map(msg => (
-              <div key={msg._id} className={`flex ${msg.sender?._id === user._id ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
-                  msg.isFromPage ? 'bg-primary/10 text-primary dark:text-primary-dark' :
-                  msg.sender?._id === user._id ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-dark-elevated'
+              <motion.div key={msg._id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                className={`flex ${msg.sender?._id === user._id ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[75%] px-4 py-2.5 text-sm shadow-sm ${
+                  msg.isFromPage ? 'bg-white dark:bg-dark-card rounded-2xl rounded-tl-md border border-primary/20 text-primary' :
+                  msg.sender?._id === user._id ? 'bg-gradient-to-r from-primary to-purple-600 text-white rounded-2xl rounded-tr-md' : 'bg-white dark:bg-dark-card rounded-2xl rounded-tl-md'
                 }`}>
-                  {msg.isFromPage && <span className="text-[10px] font-bold block mb-0.5">{page.pageName}</span>}
+                  {msg.isFromPage && <span className="text-[10px] font-bold block mb-0.5 opacity-70">{page.pageName}</span>}
                   {msg.message}
                 </div>
-              </div>
+              </motion.div>
             ))}
             <div ref={msgEndRef} />
           </div>
-          <form onSubmit={handleSendMessage} className="p-3 border-t border-gray-100 dark:border-dark-border flex gap-2">
+          <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-100 dark:border-dark-border flex gap-2 bg-white dark:bg-dark-card">
             <input type="text" value={messageText} onChange={e => setMessageText(e.target.value)}
-              className="input-field flex-1 py-2 text-sm" placeholder="Type a message..." />
-            <button type="submit" className="btn-primary p-2 rounded-xl">
+              className="input-field flex-1 py-2.5 text-sm rounded-xl bg-gray-50 dark:bg-dark-elevated" placeholder="Type a message..." />
+            <motion.button whileTap={{ scale: 0.9 }} type="submit"
+              className="bg-gradient-to-r from-primary to-purple-600 text-white p-2.5 rounded-xl shadow-md hover:shadow-lg transition-all">
               <HiPaperAirplane className="w-5 h-5" />
-            </button>
+            </motion.button>
           </form>
         </div>
       )}
 
       {/* ════════ TAB: EVENTS ════════ */}
       {tab === 'events' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {isAdmin && (
-            <button onClick={() => setShowEventModal(true)} className="btn-primary text-sm flex items-center gap-2">
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              onClick={() => setShowEventModal(true)}
+              className="bg-gradient-to-r from-primary to-purple-600 text-white text-sm font-semibold flex items-center gap-2 px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
               <HiPlus className="w-4 h-4" /> Create Event
-            </button>
+            </motion.button>
           )}
-          {events.length === 0 && <p className="text-center text-gray-500 py-10">No events yet</p>}
+          {events.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-dark-elevated flex items-center justify-center mx-auto mb-4">
+                <HiCalendarDays className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+              </div>
+              <p className="text-gray-500 font-medium">No events yet</p>
+              <p className="text-sm text-gray-400 mt-1">Upcoming events will appear here</p>
+            </div>
+          )}
           {events.map(ev => {
             const isGoing = ev.participants?.some(p => (p._id || p) === user._id);
             return (
@@ -711,19 +792,19 @@ const PageDetail = () => {
 
       {/* ════════ TAB: SHOP ════════ */}
       {tab === 'shop' && (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {isAdmin && (
-            <div className="flex gap-2">
-              <button onClick={() => setShowProductModal(true)} className="btn-primary text-sm flex items-center gap-2">
-                <HiPlus className="w-4 h-4" /> Add Product
-              </button>
-            </div>
+            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+              onClick={() => setShowProductModal(true)}
+              className="bg-gradient-to-r from-primary to-purple-600 text-white text-sm font-semibold flex items-center gap-2 px-5 py-2.5 rounded-xl shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
+              <HiPlus className="w-4 h-4" /> Add Product
+            </motion.button>
           )}
 
           {/* My Orders (for any user) */}
           {myOrders.length > 0 && (
-            <div className="card space-y-3">
-              <h3 className="font-bold text-sm flex items-center gap-2"><HiTruck className="w-4 h-4" /> My Orders</h3>
+            <div className="bg-white dark:bg-dark-card rounded-2xl p-5 shadow-sm border border-gray-100/50 dark:border-dark-border/50 space-y-3">
+              <h3 className="font-bold text-sm flex items-center gap-2"><HiTruck className="w-4 h-4 text-primary" /> My Orders</h3>
               {myOrders.map(order => (
                 <div key={order._id} className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-dark-elevated">
                   <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-200 dark:bg-dark-hover flex-shrink-0">
@@ -745,32 +826,44 @@ const PageDetail = () => {
             </div>
           )}
 
-          {products.length === 0 && <p className="text-center text-gray-500 py-10">No products yet</p>}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {products.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-dark-elevated flex items-center justify-center mx-auto mb-4">
+                <HiShoppingBag className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+              </div>
+              <p className="text-gray-500 font-medium">No products yet</p>
+              <p className="text-sm text-gray-400 mt-1">Products from this shop will appear here</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
             {products.map(prod => (
-              <motion.div key={prod._id} whileHover={{ y: -4 }} whileTap={{ scale: 0.98 }}
-                className="card !p-0 overflow-hidden group cursor-pointer" onClick={() => setSelectedProduct(prod)}>
-                <div className="aspect-square bg-gray-100 dark:bg-dark-elevated overflow-hidden relative">
+              <motion.div key={prod._id} whileHover={{ y: -6, scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                className="bg-white dark:bg-dark-card rounded-2xl overflow-hidden group cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100/50 dark:border-dark-border/50"
+                onClick={() => setSelectedProduct(prod)}>
+                <div className="aspect-square bg-gray-50 dark:bg-dark-elevated overflow-hidden relative">
                   {prod.productImage ? (
-                    <img src={prod.productImage} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    <img src={prod.productImage} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center"><HiShoppingBag className="w-10 h-10 text-gray-300" /></div>
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-dark-elevated dark:to-dark-hover">
+                      <HiShoppingBag className="w-12 h-12 text-gray-300 dark:text-gray-600" />
+                    </div>
                   )}
                   {isAdmin && (
-                    <div className="absolute top-2 right-2 flex gap-1" onClick={e => e.stopPropagation()}>
-                      <button onClick={() => openEditProduct(prod)} className="p-1.5 rounded-lg bg-white/90 dark:bg-dark-card/90 shadow-sm hover:bg-white transition-colors">
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                      <button onClick={() => openEditProduct(prod)} className="p-2 rounded-xl bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm shadow-lg hover:bg-white transition-all">
                         <HiPencilSquare className="w-3.5 h-3.5 text-gray-600" />
                       </button>
-                      <button onClick={() => handleDeleteProduct(prod._id)} className="p-1.5 rounded-lg bg-white/90 dark:bg-dark-card/90 shadow-sm hover:bg-red-50 transition-colors">
+                      <button onClick={() => handleDeleteProduct(prod._id)} className="p-2 rounded-xl bg-white/90 dark:bg-dark-card/90 backdrop-blur-sm shadow-lg hover:bg-red-50 transition-all">
                         <HiTrash className="w-3.5 h-3.5 text-red-500" />
                       </button>
                     </div>
                   )}
+                  <div className="absolute bottom-0 inset-x-0 h-16 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <div className="p-3">
-                  <p className="font-semibold text-sm truncate">{prod.productName}</p>
-                  <p className="text-primary font-bold text-sm mt-1">₹{prod.price}</p>
-                  {prod.description && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{prod.description}</p>}
+                <div className="p-4">
+                  <p className="font-bold text-sm truncate">{prod.productName}</p>
+                  <p className="text-primary font-extrabold text-base mt-1">₹{prod.price}</p>
+                  {prod.description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 line-clamp-2 leading-relaxed">{prod.description}</p>}
                 </div>
               </motion.div>
             ))}
@@ -780,9 +873,25 @@ const PageDetail = () => {
 
       {/* ════════ TAB: ORDERS (Admin) ════════ */}
       {tab === 'orders' && isAdmin && (
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold flex items-center gap-2"><HiClipboardDocumentList className="w-5 h-5" /> Page Orders</h2>
-          {orders.length === 0 && <p className="text-center text-gray-500 py-10">No orders yet</p>}
+        <div className="space-y-5">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
+              <HiClipboardDocumentList className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-lg font-extrabold">Page Orders</h2>
+              <p className="text-xs text-gray-400">{orders.length} total orders</p>
+            </div>
+          </div>
+          {orders.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-dark-elevated flex items-center justify-center mx-auto mb-4">
+                <HiClipboardDocumentList className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+              </div>
+              <p className="text-gray-500 font-medium">No orders yet</p>
+              <p className="text-sm text-gray-400 mt-1">Orders will appear here when customers buy</p>
+            </div>
+          )}
           {orders.map(order => (
             <div key={order._id} className="card space-y-3">
               <div className="flex items-center gap-3">
@@ -853,13 +962,27 @@ const PageDetail = () => {
 
       {/* ════════ TAB: COMMUNITY ════════ */}
       {tab === 'community' && (
-        <div className="space-y-4">
-          <form onSubmit={handleCreateDiscussion} className="card flex gap-2">
+        <div className="space-y-5">
+          <form onSubmit={handleCreateDiscussion}
+            className="bg-white dark:bg-dark-card rounded-2xl p-4 flex gap-3 shadow-sm border border-gray-100/50 dark:border-dark-border/50">
+            <div className="w-9 h-9 rounded-full overflow-hidden bg-gray-200 dark:bg-dark-hover flex-shrink-0">
+              {user.profilePhoto ? <img src={user.profilePhoto} alt="" className="w-full h-full object-cover" /> :
+                <div className="w-full h-full flex items-center justify-center text-gray-400 font-bold text-xs">{user.name?.charAt(0)?.toUpperCase()}</div>}
+            </div>
             <input type="text" value={newDiscussion} onChange={e => setNewDiscussion(e.target.value)}
-              className="input-field flex-1 py-2 text-sm" placeholder="Start a discussion..." />
-            <button type="submit" className="btn-primary text-sm px-4">Post</button>
+              className="input-field flex-1 py-2 text-sm rounded-xl bg-gray-50 dark:bg-dark-elevated/50" placeholder="Start a discussion..." />
+            <motion.button whileTap={{ scale: 0.95 }} type="submit"
+              className="bg-gradient-to-r from-primary to-purple-600 text-white text-sm font-semibold px-5 rounded-xl shadow-md">Post</motion.button>
           </form>
-          {discussions.length === 0 && <p className="text-center text-gray-500 py-10">No discussions yet</p>}
+          {discussions.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-2xl bg-gray-100 dark:bg-dark-elevated flex items-center justify-center mx-auto mb-4">
+                <HiChatBubbleOvalLeft className="w-8 h-8 text-gray-300 dark:text-gray-600" />
+              </div>
+              <p className="text-gray-500 font-medium">No discussions yet</p>
+              <p className="text-sm text-gray-400 mt-1">Start a conversation with the community</p>
+            </div>
+          )}
           {discussions.map(disc => (
             <div key={disc._id} className="card space-y-3">
               <div className="flex items-center gap-2">
@@ -913,21 +1036,22 @@ const PageDetail = () => {
 
       {/* ════════ TAB: ANALYTICS ════════ */}
       {tab === 'analytics' && analytics && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { label: 'Followers', value: analytics.totalFollowers, color: 'from-blue-500 to-cyan-500' },
-              { label: 'Posts', value: analytics.totalPosts, color: 'from-purple-500 to-pink-500' },
-              { label: 'Total Likes', value: analytics.totalLikes, color: 'from-red-500 to-orange-500' },
-              { label: 'Engagement', value: analytics.engagement + '/post', color: 'from-green-500 to-emerald-500' },
+              { label: 'Followers', value: analytics.totalFollowers, color: 'from-blue-500 to-cyan-500', icon: HiUserGroup },
+              { label: 'Posts', value: analytics.totalPosts, color: 'from-purple-500 to-pink-500', icon: HiDocumentText },
+              { label: 'Total Likes', value: analytics.totalLikes, color: 'from-red-500 to-orange-500', icon: HiHeart },
+              { label: 'Engagement', value: analytics.engagement + '/post', color: 'from-green-500 to-emerald-500', icon: HiChartBar },
             ].map(stat => (
-              <div key={stat.label} className="card text-center">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center mx-auto mb-2`}>
-                  <HiChartBar className="w-5 h-5 text-white" />
+              <motion.div key={stat.label} whileHover={{ y: -4, scale: 1.02 }}
+                className="bg-white dark:bg-dark-card rounded-2xl p-5 text-center shadow-sm hover:shadow-lg transition-all border border-gray-100/50 dark:border-dark-border/50">
+                <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${stat.color} flex items-center justify-center mx-auto mb-3 shadow-lg`}>
+                  <stat.icon className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-xl font-extrabold">{stat.value}</p>
-                <p className="text-xs text-gray-500">{stat.label}</p>
-              </div>
+                <p className="text-2xl font-extrabold">{stat.value}</p>
+                <p className="text-xs text-gray-500 font-medium mt-1">{stat.label}</p>
+              </motion.div>
             ))}
           </div>
           {analytics.topPosts?.length > 0 && (
